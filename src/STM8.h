@@ -55,6 +55,30 @@ private:
         Flag_V  = (1<<7)
     };
 
+    enum ConditionCode
+    {
+        Cond_T = 0,     // true
+        Cond_F,         // false
+        Cond_EQ,        // Z=1
+        Cond_NE,        // Z=0
+        Cond_H,         // H=1
+        Cond_NH,        // H=0
+        Cond_M,         // I=1
+        Cond_NM,        // I=0
+        Cond_MI,        // N=1
+        Cond_PL,        // N=0
+        Cond_V,         // V=1
+        Cond_NV,        // V=0
+        Cond_SGE,       // (N^V)=0
+        Cond_SGT,       // (Z|(N^V))=0
+        Cond_SLE,       // (Z|(N^V))=1
+        Cond_SLT,       // (N^V)=1
+        Cond_UGE,       // C=0
+        Cond_UGT,       // C=0 & Z=0
+        Cond_ULE,       // C=1 | Z=1
+        Cond_ULT        // C=1
+    };
+
     u8 A;
     u16 X, Y;
     u16 SP;

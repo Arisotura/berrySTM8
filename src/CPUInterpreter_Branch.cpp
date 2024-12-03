@@ -19,6 +19,61 @@
 #include "STM8.h"
 
 
+template<STM8::ConditionCode cond>
+int STM8::OP_JRcc()
+{
+    s8 offset = (s8)CPUFetch();
+
+    bool jump;
+    switch (cond)
+    {
+    case Cond_T: jump = true; break;
+    case Cond_F: jump = false; break;
+    case Cond_EQ: jump =  (CC & Flag_Z); break;
+    case Cond_NE: jump = !(CC & Flag_Z); break;
+    case Cond_H:  jump =  (CC & Flag_H); break;
+    case Cond_NH: jump = !(CC & Flag_H); break;
+    case Cond_MI: jump =  (CC & Flag_N); break;
+    case Cond_PL: jump = !(CC & Flag_N); break;
+    case Cond_V:  jump =  (CC & Flag_V); break;
+    case Cond_NV: jump = !(CC & Flag_V); break;
+    case Cond_SGE: jump = !((!!(CC & Flag_N)) ^ (!!(CC & Flag_V))); break;
+    case Cond_SGT: jump = !((!!(CC & Flag_Z)) | ((!!(CC & Flag_N)) ^ (!!(CC & Flag_V)))); break;
+    case Cond_SLE: jump =  ((!!(CC & Flag_Z)) | ((!!(CC & Flag_N)) ^ (!!(CC & Flag_V)))); break;
+    case Cond_SLT: jump =  ((!!(CC & Flag_N)) ^ (!!(CC & Flag_V))); break;
+    case Cond_UGE: jump = !(CC & Flag_C); break;
+    case Cond_UGT: jump = (!(CC & Flag_C)) && (!(CC & Flag_Z)); break;
+    case Cond_ULE: jump = (CC & Flag_C) || (CC & Flag_Z); break;
+    case Cond_ULT: jump =  (CC & Flag_C); break;
+    default: return 0; // ???
+    }
+
+    if (!jump) return 1;
+
+    CPUJumpTo(PC + offset);
+    return 2;
+}
+
+template int STM8::OP_JRcc<STM8::Cond_T>();
+template int STM8::OP_JRcc<STM8::Cond_F>();
+template int STM8::OP_JRcc<STM8::Cond_EQ>();
+template int STM8::OP_JRcc<STM8::Cond_NE>();
+template int STM8::OP_JRcc<STM8::Cond_H>();
+template int STM8::OP_JRcc<STM8::Cond_NH>();
+template int STM8::OP_JRcc<STM8::Cond_MI>();
+template int STM8::OP_JRcc<STM8::Cond_PL>();
+template int STM8::OP_JRcc<STM8::Cond_V>();
+template int STM8::OP_JRcc<STM8::Cond_NV>();
+template int STM8::OP_JRcc<STM8::Cond_SGE>();
+template int STM8::OP_JRcc<STM8::Cond_SGT>();
+template int STM8::OP_JRcc<STM8::Cond_SLE>();
+template int STM8::OP_JRcc<STM8::Cond_SLT>();
+template int STM8::OP_JRcc<STM8::Cond_UGE>();
+template int STM8::OP_JRcc<STM8::Cond_UGT>();
+template int STM8::OP_JRcc<STM8::Cond_ULE>();
+template int STM8::OP_JRcc<STM8::Cond_ULT>();
+
+
 int STM8::OP_INT()
 {
     u8 extb = CPUFetch();
