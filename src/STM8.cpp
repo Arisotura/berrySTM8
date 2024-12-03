@@ -194,19 +194,21 @@ u32 STM8::CPUFetchOpAddr()
 template u32 STM8::CPUFetchOpAddr<STM8::Op_LongDirect, false>();
 template u32 STM8::CPUFetchOpAddr<STM8::Op_LongDirect, true>();
 
-u32 STM8::CPUExecute(u32 cycles)
+int STM8::CPUExecute(int cycles)
 {
-    u32 count = 0;
+    int count = 0;
     while (count < cycles)
     {
         u8 op = CPUFetch();
         _lastop = op; // debug
-        (this->*InstrTable[op])();
+        int cy = (this->*InstrTable[op])();
 
         printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
 
-        // TODO
-        count++;
+        // this will do the job for most cases
+        // instructions are supposed to have decode cycles and execute cycles, but
+        // the documentation isn't complete
+        count += (cy - 1);
     }
 
     return count;

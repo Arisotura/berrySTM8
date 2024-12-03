@@ -16,17 +16,17 @@
     with berrySTM8. If not, see http://www.gnu.org/licenses/.
 */
 
-void OP_UNK();
+int OP_UNK();
 
-void OP_Prefix90();
+int OP_Prefix90();
 
-void OP_INT();
+int OP_INT();
 
-template<bool toY>                  void OP_LDW_Imm();
-template<OperandType op, bool toY>  void OP_LDW_ToInd();
-void OP_LDW_SP_X();
+template<bool toY>                  int OP_LDW_Imm();
+template<OperandType op, bool toY>  int OP_LDW_ToInd();
+int OP_LDW_SP_X();
 
-typedef void (STM8::*InstrFunc)();
+typedef int (STM8::*InstrFunc)();
 
 InstrFunc InstrTable[256] =
 {

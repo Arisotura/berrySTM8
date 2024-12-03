@@ -34,7 +34,7 @@ public:
     void CPUReset();
     void CPUJumpTo(u32 addr);
     u8 CPUFetch();
-    u32 CPUExecute(u32 cycles);
+    int CPUExecute(int cycles);
 
     u8 MemRead(u32 addr);
     void MemWrite(u32 addr, u8 val);
@@ -72,8 +72,7 @@ private:
 
     enum OperandType
     {
-        Op_Immediate = 0,
-        Op_ShortDirect,
+        Op_ShortDirect = 0,
         Op_LongDirect,
         Op_ExtendedDirect,
         Op_Ind,

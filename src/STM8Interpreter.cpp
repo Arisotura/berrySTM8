@@ -17,68 +17,21 @@
 */
 
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
 #include "STM8.h"
 
 
-/*u8 STM8::FetchOp8_Imm()
-{
-    return CPUFetch();
-}
-
-u8 STM8::FetchOp8_Dir8()
-{
-    u32 addr = CPUFetch();
-
-    return MemRead(addr);
-}
-
-u8 STM8::FetchOp8_Dir16()
-{
-    u32 addr = (CPUFetch() << 8);
-    addr |= CPUFetch();
-
-    return MemRead(addr);
-}
-
-u8 STM8::FetchOp8_Dir24()
-{
-    u32 addr = (CPUFetch() << 16);
-    addr |= (CPUFetch() << 8);
-    addr |= CPUFetch();
-
-    return MemRead(addr);
-}
-
-u8 STM8::FetchOp8_IndX()
-{
-    u32 addr = X;
-
-    return MemRead(addr);
-}
-
-u8 STM8::FetchOp8_IndX_Dir8()
-{
-    u32 addr = CPUFetch();
-    addr += X;
-
-    return MemRead(addr);
-}*/
-
-
-
-
-void STM8::OP_UNK()
+int STM8::OP_UNK()
 {
     printf("unknown opcode %04X @ %08X\n", _lastop, PC-1);
     exit(-1);
+    return 1;
 }
 
 
-void STM8::OP_Prefix90()
+int STM8::OP_Prefix90()
 {
     u8 op = CPUFetch();
     _lastop = 0x9000 | op; // debug
-    (this->*InstrTable90[op])();
+    return (this->*InstrTable90[op])();
 }

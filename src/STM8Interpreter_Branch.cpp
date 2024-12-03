@@ -19,13 +19,12 @@
 #include "STM8.h"
 
 
-void STM8::OP_INT()
+int STM8::OP_INT()
 {
-    // TODO: return 2 cycles
-
     u8 extb = CPUFetch();
     u8 ms = CPUFetch();
     u8 ls = CPUFetch();
 
     CPUJumpTo((extb << 16) | (ms << 8) | ls);
+    return 2;
 }

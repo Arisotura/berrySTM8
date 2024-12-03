@@ -20,7 +20,7 @@
 
 
 template<bool toY>
-void STM8::OP_LDW_Imm()
+int STM8::OP_LDW_Imm()
 {
     // TODO: return 2 cycles
     // TODO: flags!!
@@ -31,14 +31,16 @@ void STM8::OP_LDW_Imm()
     if (toY) Y = val;
     else     X = val;
     SetNZ((val & 0x8000), (!val));
+
+    return 2;
 }
 
-template void STM8::OP_LDW_Imm<false>();
-template void STM8::OP_LDW_Imm<true>();
+template int STM8::OP_LDW_Imm<false>();
+template int STM8::OP_LDW_Imm<true>();
 
 
 template<STM8::OperandType op, bool toY>
-void STM8::OP_LDW_ToInd()
+int STM8::OP_LDW_ToInd()
 {
     u32 addr = CPUFetchOpAddr<op, toY>();
     u16 val = (MemRead(addr) << 8);
@@ -48,14 +50,15 @@ void STM8::OP_LDW_ToInd()
     else     X = val;
     SetNZ((val & 0x8000), (!val));
 
-    // TODO: cycle count
+    return (op < Op_ShortIndirect) ? 2 : 5;
 }
 
-template void STM8::OP_LDW_ToInd<STM8::Op_LongDirect, false>();
-template void STM8::OP_LDW_ToInd<STM8::Op_LongDirect, true>();
+template int STM8::OP_LDW_ToInd<STM8::Op_LongDirect, false>();
+template int STM8::OP_LDW_ToInd<STM8::Op_LongDirect, true>();
 
 
-void STM8::OP_LDW_SP_X()
+int STM8::OP_LDW_SP_X()
 {
     SP = X;
+    return 1;
 }
