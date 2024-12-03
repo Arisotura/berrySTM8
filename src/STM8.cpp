@@ -132,11 +132,6 @@ u32 STM8::CPUFetchOpAddr()
         addr += index;
         break;
 
-    case STM8::Op_ShortDirectSP:
-        addr = CPUFetch();
-        addr += SP;
-        break;
-
     case STM8::Op_LongDirectInd:
         addr = (CPUFetch() << 8);
         addr |= CPUFetch();
@@ -148,6 +143,11 @@ u32 STM8::CPUFetchOpAddr()
         addr |= (CPUFetch() << 8);
         addr |= CPUFetch();
         addr += index;
+        break;
+
+    case STM8::Op_ShortDirectSP:
+        addr = CPUFetch();
+        addr += SP;
         break;
 
     case STM8::Op_ShortIndirect:
@@ -191,8 +191,27 @@ u32 STM8::CPUFetchOpAddr()
     return addr;
 }
 
-template u32 STM8::CPUFetchOpAddr<STM8::Op_LongDirect, false>();
-template u32 STM8::CPUFetchOpAddr<STM8::Op_LongDirect, true>();
+#define DeclTemplate(op) \
+    template u32 STM8::CPUFetchOpAddr<STM8::op, false>(); \
+    template u32 STM8::CPUFetchOpAddr<STM8::op, true>();
+
+DeclTemplate(Op_ShortDirect)
+DeclTemplate(Op_LongDirect)
+DeclTemplate(Op_ExtendedDirect)
+DeclTemplate(Op_Ind)
+DeclTemplate(Op_ShortDirectInd)
+DeclTemplate(Op_ShortDirectSP)
+DeclTemplate(Op_LongDirectInd)
+DeclTemplate(Op_ExtendedDirectInd)
+DeclTemplate(Op_ShortIndirect)
+DeclTemplate(Op_LongIndirect)
+DeclTemplate(Op_ExtendedIndirect)
+DeclTemplate(Op_ShortIndirectInd)
+DeclTemplate(Op_LongIndirectInd)
+DeclTemplate(Op_ExtendedIndirectInd)
+
+#undef DeclTemplate
+
 
 int STM8::CPUExecute(int cycles)
 {

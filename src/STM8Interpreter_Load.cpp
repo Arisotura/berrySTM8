@@ -19,17 +19,76 @@
 #include "STM8.h"
 
 
-template<bool toY>
+#define DeclTemplateLD(func) \
+    template int STM8::func<STM8::Op_ShortDirect, false>(); \
+    template int STM8::func<STM8::Op_LongDirect, false>(); \
+    template int STM8::func<STM8::Op_Ind, false>(); \
+    template int STM8::func<STM8::Op_Ind, true>(); \
+    template int STM8::func<STM8::Op_ShortDirectInd, false>(); \
+    template int STM8::func<STM8::Op_ShortDirectInd, true>(); \
+    template int STM8::func<STM8::Op_LongDirectInd, false>(); \
+    template int STM8::func<STM8::Op_LongDirectInd, true>(); \
+    template int STM8::func<STM8::Op_ShortDirectSP, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirect, false>(); \
+    template int STM8::func<STM8::Op_LongIndirect, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirectInd, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirectInd, true>(); \
+    template int STM8::func<STM8::Op_LongIndirectInd, false>();
+
+#define DeclTemplateLDW(func) \
+    template int STM8::func<STM8::Op_ShortDirect, false>(); \
+    template int STM8::func<STM8::Op_ShortDirect, true>(); \
+    template int STM8::func<STM8::Op_LongDirect, false>(); \
+    template int STM8::func<STM8::Op_LongDirect, true>(); \
+    template int STM8::func<STM8::Op_Ind, false>(); \
+    template int STM8::func<STM8::Op_Ind, true>(); \
+    template int STM8::func<STM8::Op_ShortDirectInd, false>(); \
+    template int STM8::func<STM8::Op_ShortDirectInd, true>(); \
+    template int STM8::func<STM8::Op_LongDirectInd, false>(); \
+    template int STM8::func<STM8::Op_LongDirectInd, true>(); \
+    template int STM8::func<STM8::Op_ShortDirectSP, false>(); \
+    template int STM8::func<STM8::Op_ShortDirectSP, true>(); \
+    template int STM8::func<STM8::Op_ShortIndirect, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirect, true>(); \
+    template int STM8::func<STM8::Op_LongIndirect, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirectInd, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirectInd, true>(); \
+    template int STM8::func<STM8::Op_LongIndirectInd, false>();
+
+
+int STM8::OP_LD_Imm()
+{
+    u8 val = CPUFetch();
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_LD_A()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+
+    return (op < Op_ShortIndirect) ? 1 : 4;
+}
+
+DeclTemplateLD(OP_LD_A)
+
+
+template<bool indY>
 int STM8::OP_LDW_Imm()
 {
-    // TODO: return 2 cycles
-    // TODO: flags!!
-
     u16 val = (CPUFetch() << 8);
     val |= CPUFetch();
 
-    if (toY) Y = val;
-    else     X = val;
+    if (indY) Y = val;
+    else      X = val;
     SetNZ((val & 0x8000), (!val));
 
     return 2;
@@ -39,22 +98,21 @@ template int STM8::OP_LDW_Imm<false>();
 template int STM8::OP_LDW_Imm<true>();
 
 
-template<STM8::OperandType op, bool toY>
-int STM8::OP_LDW_ToInd()
+template<STM8::OperandType op, bool indY>
+int STM8::OP_LDW_Ind()
 {
-    u32 addr = CPUFetchOpAddr<op, toY>();
+    u32 addr = CPUFetchOpAddr<op, indY>();
     u16 val = (MemRead(addr) << 8);
     val |= MemRead(addr+1);
 
-    if (toY) Y = val;
-    else     X = val;
+    if (indY) Y = val;
+    else      X = val;
     SetNZ((val & 0x8000), (!val));
 
     return (op < Op_ShortIndirect) ? 2 : 5;
 }
 
-template int STM8::OP_LDW_ToInd<STM8::Op_LongDirect, false>();
-template int STM8::OP_LDW_ToInd<STM8::Op_LongDirect, true>();
+DeclTemplateLDW(OP_LDW_Ind);
 
 
 int STM8::OP_LDW_SP_X()
