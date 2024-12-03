@@ -88,6 +88,11 @@ void STM8::CPUReset()
 }
 
 
+void STM8::CPUJumpTo(u32 addr)
+{
+    PC = addr & 0xFFFFFF;
+}
+
 u8 STM8::CPUFetch()
 {
     u8 ret = MemRead(PC);
@@ -95,16 +100,113 @@ u8 STM8::CPUFetch()
     return ret;
 }
 
+template<STM8::OperandType op, bool indY>
+u32 STM8::CPUFetchOpAddr()
+{
+    u32 addr, ptr;
+    u16 index = indY ? Y : X;
+
+    switch (op)
+    {
+    case STM8::Op_ShortDirect:
+        addr = CPUFetch();
+        break;
+
+    case STM8::Op_LongDirect:
+        addr = (CPUFetch() << 8);
+        addr |= CPUFetch();
+        break;
+
+    case STM8::Op_ExtendedDirect:
+        addr = CPUFetch() << 16;
+        addr |= (CPUFetch() << 8);
+        addr |= CPUFetch();
+        break;
+
+    case STM8::Op_Ind:
+        addr = index;
+        break;
+
+    case STM8::Op_ShortDirectInd:
+        addr = CPUFetch();
+        addr += index;
+        break;
+
+    case STM8::Op_ShortDirectSP:
+        addr = CPUFetch();
+        addr += SP;
+        break;
+
+    case STM8::Op_LongDirectInd:
+        addr = (CPUFetch() << 8);
+        addr |= CPUFetch();
+        addr += index;
+        break;
+
+    case STM8::Op_ExtendedDirectInd:
+        addr = CPUFetch() << 16;
+        addr |= (CPUFetch() << 8);
+        addr |= CPUFetch();
+        addr += index;
+        break;
+
+    case STM8::Op_ShortIndirect:
+        ptr = CPUFetch();
+        addr = (MemRead(ptr) << 8) | MemRead(ptr+1);
+        break;
+
+    case STM8::Op_LongIndirect:
+        ptr = (CPUFetch() << 8);
+        ptr |= CPUFetch();
+        addr = (MemRead(ptr) << 8) | MemRead(ptr+1);
+        break;
+
+    case STM8::Op_ExtendedIndirect:
+        ptr = (CPUFetch() << 8);
+        ptr |= CPUFetch();
+        addr = (MemRead(ptr) << 16) | (MemRead(ptr+1) << 8) | MemRead(ptr+2);
+        break;
+
+    case STM8::Op_ShortIndirectInd:
+        ptr = CPUFetch();
+        addr = (MemRead(ptr) << 8) | MemRead(ptr+1);
+        addr += index;
+        break;
+
+    case STM8::Op_LongIndirectInd:
+        ptr = (CPUFetch() << 8);
+        ptr |= CPUFetch();
+        addr = (MemRead(ptr) << 8) | MemRead(ptr+1);
+        addr += index;
+        break;
+
+    case STM8::Op_ExtendedIndirectInd:
+        ptr = (CPUFetch() << 8);
+        ptr |= CPUFetch();
+        addr = (MemRead(ptr) << 16) | (MemRead(ptr+1) << 8) | MemRead(ptr+2);
+        addr += index;
+        break;
+    }
+
+    return addr;
+}
+
+template u32 STM8::CPUFetchOpAddr<STM8::Op_LongDirect, false>();
+template u32 STM8::CPUFetchOpAddr<STM8::Op_LongDirect, true>();
+
 u32 STM8::CPUExecute(u32 cycles)
 {
     u32 count = 0;
     while (count < cycles)
     {
         u8 op = CPUFetch();
-        // TODO!
-        printf("STM8: OP %02X\n", op);
+        _lastop = op; // debug
+        (this->*InstrTable[op])();
 
-        exit(-1);
+        printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+
+        // TODO
+        count++;
     }
 
     return count;

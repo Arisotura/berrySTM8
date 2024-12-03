@@ -9,6 +9,9 @@ include_directories(${SDL2_INCLUDE_DIRS})
 
 add_executable(berrySTM8
         src/main.cpp
-        src/STM8.cpp)
+        src/STM8.cpp
+        src/STM8Interpreter.cpp
+        src/STM8Interpreter_Branch.cpp
+        src/STM8Interpreter_Load.cpp)
 
 target_link_libraries(berrySTM8 ${SDL2_LIBRARIES})

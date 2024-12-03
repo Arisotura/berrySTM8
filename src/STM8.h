@@ -32,6 +32,7 @@ public:
     bool LoadImage(int type, const char* filename);
 
     void CPUReset();
+    void CPUJumpTo(u32 addr);
     u8 CPUFetch();
     u32 CPUExecute(u32 cycles);
 
@@ -43,11 +44,55 @@ private:
 
     // ---- CPU ---------------------------------
 
+    enum
+    {
+        Flag_C  = (1<<0),
+        Flag_Z  = (1<<1),
+        Flag_N  = (1<<2),
+        Flag_I0 = (1<<3),
+        Flag_H  = (1<<4),
+        Flag_I1 = (1<<5),
+        Flag_V  = (1<<7)
+    };
+
     u8 A;
     u16 X, Y;
     u16 SP;
     u32 PC;
     u8 CC;
+
+    u16 _lastop;
+
+    void SetNZ(bool n, bool z)
+    {
+        CC &= ~(Flag_N | Flag_Z);
+        if (n) CC |= Flag_N;
+        if (z) CC |= Flag_Z;
+    }
+
+    enum OperandType
+    {
+        Op_Immediate = 0,
+        Op_ShortDirect,
+        Op_LongDirect,
+        Op_ExtendedDirect,
+        Op_Ind,
+        Op_ShortDirectInd,
+        Op_ShortDirectSP,
+        Op_LongDirectInd,
+        Op_ExtendedDirectInd,
+        Op_ShortIndirect,
+        Op_LongIndirect,
+        Op_ExtendedIndirect,
+        Op_ShortIndirectInd,
+        Op_LongIndirectInd,
+        Op_ExtendedIndirectInd
+    };
+
+    template<OperandType op, bool indY = false>
+    u32 CPUFetchOpAddr();
+
+#include "CPUInstrTable.h"
 
     // ---- memory ------------------------------
 
