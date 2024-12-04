@@ -115,8 +115,59 @@ int STM8::OP_LDW_Ind()
 DeclTemplateLDW(OP_LDW_Ind);
 
 
+template<STM8::OperandType op, bool indY>
+int STM8::OP_LDW_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u16 val;
+    if ((op >= Op_Ind && op <= Op_ExtendedDirectInd) ||
+        (op >= Op_ShortIndirectInd))
+        val = indY ? X : Y;
+    else
+        val = indY ? Y : X;
+
+    MemWrite(addr, val >> 8);
+    MemWrite(addr+1, val & 0xFF);
+    SetNZ((val & 0x8000), (!val));
+
+    return (op < Op_ShortIndirect) ? 2 : 5;
+}
+
+DeclTemplateLDW(OP_LDW_Mem);
+
+
+int STM8::OP_LDW_Y_X()
+{
+    Y = X;
+    return 1;
+}
+
+int STM8::OP_LDW_X_Y()
+{
+    X = Y;
+    return 1;
+}
+
+int STM8::OP_LDW_X_SP()
+{
+    X = SP;
+    return 1;
+}
+
 int STM8::OP_LDW_SP_X()
 {
     SP = X;
+    return 1;
+}
+
+int STM8::OP_LDW_Y_SP()
+{
+    Y = SP;
+    return 1;
+}
+
+int STM8::OP_LDW_SP_Y()
+{
+    SP = Y;
     return 1;
 }
