@@ -16,43 +16,15 @@
     with berrySTM8. If not, see http://www.gnu.org/licenses/.
 */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "STM8.h"
 
 
-int STM8::OP_UNK()
+int STM8::OP_BCP_Imm()
 {
-    printf("unknown opcode %04X @ %08X\n", _lastop, PC-1);
-    exit(-1);
+    u8 val = CPUFetch();
+
+    val = A & val;
+    SetNZ((val & 0x80), (!val));
+
     return 1;
-}
-
-
-int STM8::OP_Prefix72()
-{
-    u8 op = CPUFetch();
-    _lastop = 0x7200 | op; // debug
-    return (this->*InstrTable72[op])();
-}
-
-int STM8::OP_Prefix90()
-{
-    u8 op = CPUFetch();
-    _lastop = 0x9000 | op; // debug
-    return (this->*InstrTable90[op])();
-}
-
-int STM8::OP_Prefix91()
-{
-    u8 op = CPUFetch();
-    _lastop = 0x9100 | op; // debug
-    return (this->*InstrTable91[op])();
-}
-
-int STM8::OP_Prefix92()
-{
-    u8 op = CPUFetch();
-    _lastop = 0x9200 | op; // debug
-    return (this->*InstrTable92[op])();
 }
