@@ -75,7 +75,7 @@ int STM8::OP_LD_A()
     A = val;
     SetNZ((val & 0x80), (!val));
 
-    return (op < Op_ShortIndirect) ? 1 : 4;
+    return OpIsIndirect(op) ? 1 : 4;
 }
 
 DeclTemplateLD(OP_LD_A)
@@ -90,7 +90,7 @@ int STM8::OP_LD_Mem()
     MemWrite(addr, val);
     SetNZ((val & 0x80), (!val));
 
-    return (op < Op_ShortIndirect) ? 1 : 4;
+    return OpIsIndirect(op) ? 1 : 4;
 }
 
 DeclTemplateLDW(OP_LD_Mem);
@@ -173,7 +173,7 @@ int STM8::OP_LDW_Ind()
     else      X = val;
     SetNZ((val & 0x8000), (!val));
 
-    return (op < Op_ShortIndirect) ? 2 : 5;
+    return OpIsIndirect(op) ? 2 : 5;
 }
 
 DeclTemplateLDW(OP_LDW_Ind);
@@ -184,8 +184,7 @@ int STM8::OP_LDW_Mem()
 {
     u32 addr = CPUFetchOpAddr<op, indY>();
     u16 val;
-    if ((op >= Op_Ind && op <= Op_ExtendedDirectInd) ||
-        (op >= Op_ShortIndirectInd))
+    if (OpIsInd(op))
         val = indY ? X : Y;
     else
         val = indY ? Y : X;
@@ -194,7 +193,7 @@ int STM8::OP_LDW_Mem()
     MemWrite(addr+1, val & 0xFF);
     SetNZ((val & 0x8000), (!val));
 
-    return (op < Op_ShortIndirect) ? 2 : 5;
+    return OpIsIndirect(op) ? 2 : 5;
 }
 
 DeclTemplateLDW(OP_LDW_Mem);

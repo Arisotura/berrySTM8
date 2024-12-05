@@ -238,6 +238,7 @@ u8 STM8::MemRead(u32 addr)
 {
     if (addr < RAMSize)
     {
+        printf("STM8: RAM read %04X %02X\n", addr, RAM[addr]);
         return RAM[addr];
     }
     else if ((addr >= EEPROMStart) && (addr < EEPROMEnd))
@@ -257,6 +258,7 @@ void STM8::MemWrite(u32 addr, u8 val)
 {
     if (addr < RAMSize)
     {
+        printf("STM8: RAM write %04X %02X\n", addr, val);
         RAM[addr] = val;
         return;
     }

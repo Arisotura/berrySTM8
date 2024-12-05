@@ -102,6 +102,15 @@ private:
         if (v) CC |= Flag_V;
     }
 
+    void SetNZVC(bool n, bool z, bool v, bool c)
+    {
+        CC &= ~(Flag_N | Flag_Z | Flag_V | Flag_C);
+        if (n) CC |= Flag_N;
+        if (z) CC |= Flag_Z;
+        if (v) CC |= Flag_V;
+        if (c) CC |= Flag_C;
+    }
+
     enum OperandType
     {
         Op_ShortDirect = 0,
@@ -119,6 +128,17 @@ private:
         Op_LongIndirectInd,
         Op_ExtendedIndirectInd
     };
+
+    bool OpIsInd(OperandType op)
+    {
+        return ((op >= Op_Ind && op <= Op_ExtendedDirectInd) ||
+                (op >= Op_ShortIndirectInd));
+    }
+
+    bool OpIsIndirect(OperandType op)
+    {
+        return op >= Op_ShortIndirect;
+    }
 
     template<OperandType op, bool indY = false>
     u32 CPUFetchOpAddr();
