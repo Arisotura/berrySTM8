@@ -25,6 +25,8 @@ int OP_Prefix92();
 
 int OP_BCP_Imm();
 
+template<bool indY> int OP_INCW();
+
 template<ConditionCode cond> int OP_JRcc();
 int OP_INT();
 
@@ -77,7 +79,7 @@ InstrFunc InstrTable[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, // 50
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
+    &STM8::OP_INCW<false>, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, // 60
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_LD_Mem<Op_ShortDirectSP,false>,
@@ -213,7 +215,7 @@ InstrFunc InstrTable90[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, // 50
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
+    &STM8::OP_INCW<true>, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, // 60
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,

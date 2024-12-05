@@ -94,6 +94,14 @@ private:
         if (z) CC |= Flag_Z;
     }
 
+    void SetNZV(bool n, bool z, bool v)
+    {
+        CC &= ~(Flag_N | Flag_Z | Flag_V);
+        if (n) CC |= Flag_N;
+        if (z) CC |= Flag_Z;
+        if (v) CC |= Flag_V;
+    }
+
     enum OperandType
     {
         Op_ShortDirect = 0,

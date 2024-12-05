@@ -19,6 +19,13 @@
 #include "STM8.h"
 
 
+inline bool OverflowAdd16(u16 a, u16 b)
+{
+    u16 res = a + b;
+    return (!((a ^ b) & 0x8000)) && ((a ^ res) & 0x8000);
+}
+
+
 int STM8::OP_BCP_Imm()
 {
     u8 val = CPUFetch();
@@ -28,3 +35,20 @@ int STM8::OP_BCP_Imm()
 
     return 1;
 }
+
+
+template<bool indY>
+int STM8::OP_INCW()
+{
+    u16 oldval = indY ? Y : X;
+    u16 val = oldval + 1;
+
+    if (indY) Y = val;
+    else      X = val;
+    SetNZV((val & 0x8000), (!val), OverflowAdd16(oldval, 1));
+
+    return 1;
+}
+
+template int STM8::OP_INCW<false>();
+template int STM8::OP_INCW<true>();
