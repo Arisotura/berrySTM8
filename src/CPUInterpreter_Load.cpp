@@ -81,6 +81,70 @@ int STM8::OP_LD_A()
 DeclTemplateLD(OP_LD_A)
 
 
+template<STM8::OperandType op, bool indY>
+int STM8::OP_LD_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = A;
+
+    MemWrite(addr, val);
+    SetNZ((val & 0x80), (!val));
+
+    return (op < Op_ShortIndirect) ? 1 : 4;
+}
+
+DeclTemplateLDW(OP_LD_Mem);
+
+
+int STM8::OP_LD_XL_A()
+{
+    X = (X & 0xFF00) | A;
+    return 1;
+}
+
+int STM8::OP_LD_A_XL()
+{
+    A = X & 0xFF;
+    return 1;
+}
+
+int STM8::OP_LD_YL_A()
+{
+    Y = (Y & 0xFF00) | A;
+    return 1;
+}
+
+int STM8::OP_LD_A_YL()
+{
+    A = Y & 0xFF;
+    return 1;
+}
+
+int STM8::OP_LD_XH_A()
+{
+    X = (X & 0x00FF) | (A << 8);
+    return 1;
+}
+
+int STM8::OP_LD_A_XH()
+{
+    A = X >> 8;
+    return 1;
+}
+
+int STM8::OP_LD_YH_A()
+{
+    Y = (Y & 0x00FF) | (A << 8);
+    return 1;
+}
+
+int STM8::OP_LD_A_YH()
+{
+    A = Y >> 8;
+    return 1;
+}
+
+
 template<bool indY>
 int STM8::OP_LDW_Imm()
 {
