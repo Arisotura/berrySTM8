@@ -111,6 +111,16 @@ private:
         if (c) CC |= Flag_C;
     }
 
+    void SetNZVCH(bool n, bool z, bool v, bool c, bool h)
+    {
+        CC &= ~(Flag_N | Flag_Z | Flag_V | Flag_C | Flag_H);
+        if (n) CC |= Flag_N;
+        if (z) CC |= Flag_Z;
+        if (v) CC |= Flag_V;
+        if (c) CC |= Flag_C;
+        if (h) CC |= Flag_H;
+    }
+
     enum OperandType
     {
         Op_ShortDirect = 0,

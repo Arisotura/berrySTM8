@@ -56,6 +56,28 @@
     template int STM8::func<STM8::Op_LongIndirectInd, false>();
 
 
+int STM8::OP_CLR_A()
+{
+    A = 0;
+    SetNZ(false, true);
+
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_CLR_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+
+    MemWrite(addr, 0);
+    SetNZ(false, true);
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplateLDW(OP_CLR_Mem);
+
+
 int STM8::OP_LD_Imm()
 {
     u8 val = CPUFetch();
@@ -75,7 +97,7 @@ int STM8::OP_LD_A()
     A = val;
     SetNZ((val & 0x80), (!val));
 
-    return OpIsIndirect(op) ? 1 : 4;
+    return OpIsIndirect(op) ? 4 : 1;
 }
 
 DeclTemplateLD(OP_LD_A)
@@ -90,7 +112,7 @@ int STM8::OP_LD_Mem()
     MemWrite(addr, val);
     SetNZ((val & 0x80), (!val));
 
-    return OpIsIndirect(op) ? 1 : 4;
+    return OpIsIndirect(op) ? 4 : 1;
 }
 
 DeclTemplateLDW(OP_LD_Mem);
@@ -173,7 +195,7 @@ int STM8::OP_LDW_Ind()
     else      X = val;
     SetNZ((val & 0x8000), (!val));
 
-    return OpIsIndirect(op) ? 2 : 5;
+    return OpIsIndirect(op) ? 5 : 2;
 }
 
 DeclTemplateLDW(OP_LDW_Ind);
@@ -193,7 +215,7 @@ int STM8::OP_LDW_Mem()
     MemWrite(addr+1, val & 0xFF);
     SetNZ((val & 0x8000), (!val));
 
-    return OpIsIndirect(op) ? 2 : 5;
+    return OpIsIndirect(op) ? 5 : 2;
 }
 
 DeclTemplateLDW(OP_LDW_Mem);
@@ -232,5 +254,48 @@ int STM8::OP_LDW_Y_SP()
 int STM8::OP_LDW_SP_Y()
 {
     SP = Y;
+    return 1;
+}
+
+
+int STM8::OP_MOV_Imm()
+{
+    u8 val = CPUFetch();
+    u32 dst = CPUFetchOpAddr<STM8::Op_LongDirect>();
+    MemWrite(dst, val);
+    return 1;
+}
+
+/*template<STM8::OperandType op>
+int STM8::OP_MOV_Mem()
+{
+    u32
+}*/
+
+
+int STM8::OP_PUSH_A()
+{
+    MemWrite(SP--, A);
+    return 1;
+}
+
+int STM8::OP_PUSH_CC()
+{
+    MemWrite(SP--, CC);
+    return 1;
+}
+
+int STM8::OP_PUSH_Imm()
+{
+    u8 val = CPUFetch();
+    MemWrite(SP--, val);
+    return 1;
+}
+
+int STM8::OP_PUSH_Mem()
+{
+    u32 addr = CPUFetchOpAddr<STM8::Op_LongDirect>();
+    u8 val = MemRead(addr);
+    MemWrite(SP--, val);
     return 1;
 }

@@ -98,12 +98,80 @@ inline bool OverflowSub16(u16 a, u16 b)
 }
 
 
+template<bool indY>
+int STM8::OP_ADDW_Imm()
+{
+    u16 a = indY ? Y : X;
+    u16 b = (CPUFetch() << 8);
+    b |= CPUFetch();
+
+    u16 val = a + b;
+    if (indY) Y = val;
+    else      X = val;
+    SetNZVCH((val & 0x8000), (!val), OverflowAdd16(a, b), CarryAdd16(a, b), CarryAdd8(a&0xFF, b&0xFF));
+
+    return 2;
+}
+
+template int STM8::OP_ADDW_Imm<false>();
+template int STM8::OP_ADDW_Imm<true>();
+
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_ADDW_Ind()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+
+    u16 a, b;
+
+    if (OpIsInd(op))
+        a = indY ? X : Y;
+    else
+        a = indY ? Y : X;
+
+    b = (MemRead(addr) << 8);
+    b |= MemRead(addr+1);
+
+    u16 val = a + b;
+    if (indY) Y = val;
+    else      X = val;
+    SetNZVCH((val & 0x8000), (!val), OverflowAdd16(a, b), CarryAdd16(a, b), CarryAdd8(a&0xFF, b&0xFF));
+
+    return OpIsIndirect(op) ? 5 : 2;
+}
+
+template int STM8::OP_ADDW_Ind<STM8::Op_LongDirect, false>();
+template int STM8::OP_ADDW_Ind<STM8::Op_LongDirect, true>();
+template int STM8::OP_ADDW_Ind<STM8::Op_ShortDirectSP, false>();
+template int STM8::OP_ADDW_Ind<STM8::Op_ShortDirectSP, true>();
+
+
+int STM8::OP_ADDW_SP()
+{
+    u16 b = CPUFetch();
+    SP += b;
+    return 2;
+}
+
+
 int STM8::OP_BCP_Imm()
 {
     u8 val = CPUFetch();
 
     val = A & val;
     SetNZ((val & 0x80), (!val));
+
+    return 1;
+}
+
+
+int STM8::OP_CP_Imm()
+{
+    u8 a = A;
+    u8 b = CPUFetch();
+
+    u8 val = a - b;
+    SetNZVC((val & 0x80), (!val), OverflowSub8(a, b), CarrySub8(a, b));
 
     return 1;
 }

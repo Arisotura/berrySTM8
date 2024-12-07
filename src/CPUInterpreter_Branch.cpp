@@ -19,6 +19,42 @@
 #include "STM8.h"
 
 
+int STM8::OP_CALL_Imm()
+{
+    u32 dst = (CPUFetch() << 8);
+    dst |= CPUFetch();
+
+    MemWrite(SP--, PC & 0xFF);
+    MemWrite(SP--, (PC >> 8) & 0xFF);
+
+    CPUJumpTo(dst);
+    return 4;
+}
+
+
+int STM8::OP_CALLR()
+{
+    s8 offset = (s8)CPUFetch();
+
+    MemWrite(SP--, PC & 0xFF);
+    MemWrite(SP--, (PC >> 8) & 0xFF);
+
+    CPUJumpTo(PC + offset);
+    return 4;
+}
+
+
+int STM8::OP_INT()
+{
+    u32 dst = (CPUFetch() << 16);
+    dst |= (CPUFetch() << 8);
+    dst |= CPUFetch();
+
+    CPUJumpTo(dst);
+    return 2;
+}
+
+
 template<STM8::ConditionCode cond>
 int STM8::OP_JRcc()
 {
@@ -72,14 +108,3 @@ template int STM8::OP_JRcc<STM8::Cond_UGE>();
 template int STM8::OP_JRcc<STM8::Cond_UGT>();
 template int STM8::OP_JRcc<STM8::Cond_ULE>();
 template int STM8::OP_JRcc<STM8::Cond_ULT>();
-
-
-int STM8::OP_INT()
-{
-    u8 extb = CPUFetch();
-    u8 ms = CPUFetch();
-    u8 ls = CPUFetch();
-
-    CPUJumpTo((extb << 16) | (ms << 8) | ls);
-    return 2;
-}

@@ -24,6 +24,7 @@
 int STM8::OP_UNK()
 {
     printf("unknown opcode %04X @ %08X\n", _lastop, PC-1);
+    printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
     exit(-1);
     return 1;
 }
