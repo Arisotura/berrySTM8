@@ -27,7 +27,7 @@ int STM8::OP_CALL_Imm()
     MemWrite(SP--, PC & 0xFF);
     MemWrite(SP--, (PC >> 8) & 0xFF);
 
-    CPUJumpTo(dst);
+    CPUJumpTo((PC & 0xFF0000) | dst);
     return 4;
 }
 
@@ -108,3 +108,13 @@ template int STM8::OP_JRcc<STM8::Cond_UGE>();
 template int STM8::OP_JRcc<STM8::Cond_UGT>();
 template int STM8::OP_JRcc<STM8::Cond_ULE>();
 template int STM8::OP_JRcc<STM8::Cond_ULT>();
+
+
+int STM8::OP_RET()
+{
+    u16 pc = (MemRead(++SP) << 8);
+    pc |= MemRead(++SP);
+
+    CPUJumpTo((PC & 0xFF0000) | pc);
+    return 4;
+}

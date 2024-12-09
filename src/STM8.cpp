@@ -57,6 +57,10 @@ void STM8::Reset()
     CPUReset();
 
     memset(RAM, 0, RAMSize);
+
+    FLASH_PUKR = 0;
+    FLASH_DUKR = 0;
+    FLASH_IAPSR = 0x40;
 }
 
 
@@ -231,7 +235,7 @@ int STM8::CPUExecute(int cycles)
         // this will do the job for most cases
         // instructions are supposed to have decode cycles and execute cycles, but
         // the documentation isn't complete
-        count += (cy - 1);
+        count += cy;//(cy - 1);
     }
 
     return count;
@@ -253,6 +257,10 @@ u8 STM8::MemRead(u32 addr)
     {
         return FLASH[addr - FLASHStart];
     }
+    else if ((addr >= 0x5000) && (addr < 0x5800))
+    {
+        return IORead(addr);
+    }
 
     printf("STM8: unknown read %06X\n", addr);
     return 0;
@@ -266,6 +274,82 @@ void STM8::MemWrite(u32 addr, u8 val)
         RAM[addr] = val;
         return;
     }
+    else if ((addr >= EEPROMStart) && (addr < EEPROMEnd))
+    {
+        if (!(FLASH_IAPSR & (1<<3))) return;
+
+        printf("STM8: EEPROM write %04X %02X\n", addr, val);
+        EEPROM[addr - EEPROMStart] = val;
+        FLASH_IAPSR |= (1<<2);
+        return;
+    }
+    else if ((addr >= FLASHStart) && (addr < FLASHEnd))
+    {
+        if (!(FLASH_IAPSR & (1<<1))) return;
+
+        printf("STM8: FLASH write %04X %02X\n", addr, val);
+        FLASH[addr - FLASHStart] = val;
+        FLASH_IAPSR |= (1<<2);
+        return;
+    }
+    else if ((addr >= 0x5000) && (addr < 0x5800))
+    {
+        IOWrite(addr, val);
+        return;
+    }
 
     printf("STM8: unknown write %06X %02X\n", addr, val);
+}
+
+
+u8 STM8::IORead(u32 addr)
+{
+    switch (addr)
+    {
+    case 0x5054: return FLASH_IAPSR;
+    }
+
+    printf("STM8: unknown IO read %06X\n", addr);
+    return 0;
+}
+
+void STM8::IOWrite(u32 addr, u8 val)
+{
+    // TODO: make the addressing flexible
+    switch (addr)
+    {
+    case 0x5052:
+        if ((FLASH_PUKR == 0x56) && (val == 0xAE))
+        {
+            FLASH_IAPSR |= (1<<1);
+            FLASH_PUKR = 0;
+        }
+        else if (val == 0x56)
+        {
+            FLASH_PUKR = 0x56;
+        }
+        else
+        {
+            FLASH_PUKR = 0;
+        }
+        return;
+
+    case 0x5053:
+        if ((FLASH_PUKR == 0xAE) && (val == 0x56))
+        {
+            FLASH_IAPSR |= (1<<3);
+            FLASH_PUKR = 0;
+        }
+        else if (val == 0xAE)
+        {
+            FLASH_PUKR = 0xAE;
+        }
+        else
+        {
+            FLASH_PUKR = 0;
+        }
+        return;
+    }
+
+    printf("STM8: unknown IO write %06X %02X\n", addr, val);
 }

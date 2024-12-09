@@ -19,6 +19,22 @@
 #include "STM8.h"
 
 
+#define DeclTemplate(func) \
+    template int STM8::func<STM8::Op_ShortDirect, false>(); \
+    template int STM8::func<STM8::Op_LongDirect, false>(); \
+    template int STM8::func<STM8::Op_Ind, false>(); \
+    template int STM8::func<STM8::Op_Ind, true>(); \
+    template int STM8::func<STM8::Op_ShortDirectInd, false>(); \
+    template int STM8::func<STM8::Op_ShortDirectInd, true>(); \
+    template int STM8::func<STM8::Op_LongDirectInd, false>(); \
+    template int STM8::func<STM8::Op_LongDirectInd, true>(); \
+    template int STM8::func<STM8::Op_ShortDirectSP, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirect, false>(); \
+    template int STM8::func<STM8::Op_LongIndirect, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirectInd, false>(); \
+    template int STM8::func<STM8::Op_ShortIndirectInd, true>(); \
+    template int STM8::func<STM8::Op_LongIndirectInd, false>();
+
 #define DeclTemplateW(func) \
     template int STM8::func<STM8::Op_ShortDirect, false>(); \
     template int STM8::func<STM8::Op_ShortDirect, true>(); \
@@ -165,6 +181,48 @@ int STM8::OP_BCP_Imm()
 }
 
 
+template<int bit>
+int STM8::OP_BRES()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    u8 val = MemRead(addr);
+    val &= ~(1<<bit);
+    MemWrite(addr, val);
+
+    return 1;
+}
+
+template int STM8::OP_BRES<0>();
+template int STM8::OP_BRES<1>();
+template int STM8::OP_BRES<2>();
+template int STM8::OP_BRES<3>();
+template int STM8::OP_BRES<4>();
+template int STM8::OP_BRES<5>();
+template int STM8::OP_BRES<6>();
+template int STM8::OP_BRES<7>();
+
+
+template<int bit>
+int STM8::OP_BSET()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    u8 val = MemRead(addr);
+    val |= (1<<bit);
+    MemWrite(addr, val);
+
+    return 1;
+}
+
+template int STM8::OP_BSET<0>();
+template int STM8::OP_BSET<1>();
+template int STM8::OP_BSET<2>();
+template int STM8::OP_BSET<3>();
+template int STM8::OP_BSET<4>();
+template int STM8::OP_BSET<5>();
+template int STM8::OP_BSET<6>();
+template int STM8::OP_BSET<7>();
+
+
 int STM8::OP_CP_Imm()
 {
     u8 a = A;
@@ -233,3 +291,49 @@ int STM8::OP_INCW()
 
 template int STM8::OP_INCW<false>();
 template int STM8::OP_INCW<true>();
+
+
+int STM8::OP_OR_Imm()
+{
+    u8 val = CPUFetch();
+    val |= A;
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_OR_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+    val |= A;
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_OR_Mem)
+
+
+int STM8::OP_TNZ_A()
+{
+    u8 val = A;
+
+    SetNZ((val & 0x80), (!val));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_TNZ_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    SetNZ((val & 0x80), (!val));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_TNZ_Mem)

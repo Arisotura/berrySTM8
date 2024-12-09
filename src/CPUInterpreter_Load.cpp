@@ -75,7 +75,7 @@ int STM8::OP_CLR_Mem()
     return OpIsIndirect(op) ? 4 : 1;
 }
 
-DeclTemplateLDW(OP_CLR_Mem);
+DeclTemplateLD(OP_CLR_Mem);
 
 
 int STM8::OP_LD_Imm()

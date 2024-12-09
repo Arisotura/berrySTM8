@@ -30,6 +30,12 @@ int STM8::OP_UNK()
 }
 
 
+int STM8::OP_NOP()
+{
+    return 1;
+}
+
+
 int STM8::OP_Prefix72()
 {
     u8 op = CPUFetch();

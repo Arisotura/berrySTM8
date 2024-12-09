@@ -172,6 +172,15 @@ private:
     u32 FLASHEnd;
     u32 FLASHSize;
     u32 FLASHMask;
+
+    u8 IORead(u32 addr);
+    void IOWrite(u32 addr, u8 val);
+
+    // ---- FLASH registers ---------------------
+
+    u8 FLASH_PUKR;
+    u8 FLASH_DUKR;
+    u8 FLASH_IAPSR;
 };
 
 #endif // STM8_H
