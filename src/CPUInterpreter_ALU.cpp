@@ -170,6 +170,31 @@ int STM8::OP_ADDW_SP()
 }
 
 
+int STM8::OP_AND_Imm()
+{
+    u8 val = CPUFetch();
+    val &= A;
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_AND_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+    val &= A;
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_AND_Mem)
+
+
 int STM8::OP_BCP_Imm()
 {
     u8 val = CPUFetch();
@@ -223,6 +248,42 @@ template int STM8::OP_BSET<6>();
 template int STM8::OP_BSET<7>();
 
 
+int STM8::OP_CLR_A()
+{
+    A = 0;
+    SetNZ(false, true);
+
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_CLR_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+
+    MemWrite(addr, 0);
+    SetNZ(false, true);
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_CLR_Mem);
+
+
+template<bool indY>
+int STM8::OP_CLRW()
+{
+    if (indY) Y = 0;
+    else      X = 0;
+    SetNZ(false, true);
+
+    return 1;
+}
+
+template int STM8::OP_CLRW<false>();
+template int STM8::OP_CLRW<true>();
+
+
 int STM8::OP_CP_Imm()
 {
     u8 a = A;
@@ -233,6 +294,45 @@ int STM8::OP_CP_Imm()
 
     return 1;
 }
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_CP_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 a = A;
+    u8 b = MemRead(addr);
+
+    u8 val = a - b;
+    SetNZVC((val & 0x80), (!val), OverflowSub8(a, b), CarrySub8(a, b));
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_CP_Mem);
+
+
+int STM8::OP_CPL_A()
+{
+    A = ~A;
+    SetNZC((A & 0x80), (!A), true);
+
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_CPL_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    val = ~val;
+    MemWrite(addr, val);
+    SetNZC((val & 0x80), (!val), true);
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_CPL_Mem);
 
 
 template<bool indY>
@@ -253,7 +353,7 @@ template int STM8::OP_CPW_Imm<true>();
 
 
 template<STM8::OperandType op, bool indY>
-int STM8::OP_CPW_Ind()
+int STM8::OP_CPW_Mem()
 {
     u32 addr = CPUFetchOpAddr<op, indY>();
 
@@ -273,7 +373,31 @@ int STM8::OP_CPW_Ind()
     return OpIsIndirect(op) ? 5 : 2;
 }
 
-DeclTemplateW(OP_CPW_Ind)
+DeclTemplateW(OP_CPW_Mem)
+
+
+int STM8::OP_DEC_Imm()
+{
+    u8 val = A;
+
+    A--;
+    SetNZV((A & 0x80), (!A), OverflowSub8(val, 1));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_DEC_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    u8 nval = val - 1;
+    MemWrite(addr, nval);
+    SetNZV((nval & 0x80), (!nval), OverflowSub8(val, 1));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_DEC_Mem)
 
 
 template<bool indY>
@@ -316,6 +440,34 @@ int STM8::OP_OR_Mem()
 }
 
 DeclTemplate(OP_OR_Mem)
+
+
+template<bool indY>
+int STM8::OP_RRWA()
+{
+    u16 ind = indY ? Y : X;
+
+    u8 tmp = A;
+    A = ind & 0xFF;
+    ind = (ind >> 8) | tmp;
+
+    if (indY) Y = ind;
+    else      X = ind;
+    SetNZ((ind & 0x8000), (!ind));
+
+    return 1;
+}
+
+template int STM8::OP_RRWA<false>();
+template int STM8::OP_RRWA<true>();
+
+
+int STM8::OP_SUB_SP()
+{
+    u16 b = CPUFetch();
+    SP -= b;
+    return 1;
+}
 
 
 int STM8::OP_TNZ_A()

@@ -102,6 +102,14 @@ private:
         if (v) CC |= Flag_V;
     }
 
+    void SetNZC(bool n, bool z, bool c)
+    {
+        CC &= ~(Flag_N | Flag_Z | Flag_C);
+        if (n) CC |= Flag_N;
+        if (z) CC |= Flag_Z;
+        if (c) CC |= Flag_C;
+    }
+
     void SetNZVC(bool n, bool z, bool v, bool c)
     {
         CC &= ~(Flag_N | Flag_Z | Flag_V | Flag_C);
@@ -119,6 +127,13 @@ private:
         if (v) CC |= Flag_V;
         if (c) CC |= Flag_C;
         if (h) CC |= Flag_H;
+    }
+
+    void SetI(bool i0, bool i1)
+    {
+        CC &= ~(Flag_I0 | Flag_I1);
+        if (i0) CC |= Flag_I0;
+        if (i1) CC |= Flag_I1;
     }
 
     enum OperandType

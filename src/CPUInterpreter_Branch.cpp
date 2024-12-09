@@ -55,6 +55,25 @@ int STM8::OP_INT()
 }
 
 
+int STM8::OP_JPF_Imm()
+{
+    u32 dst = (CPUFetch() << 16);
+    dst |= (CPUFetch() << 8);
+    dst |= CPUFetch();
+
+    CPUJumpTo(dst);
+    return 2;
+}
+
+int STM8::OP_JPF_Mem()
+{
+    u32 dst = CPUFetchOpAddr<Op_ExtendedIndirect>();
+
+    CPUJumpTo(dst);
+    return 6;
+}
+
+
 template<STM8::ConditionCode cond>
 int STM8::OP_JRcc()
 {

@@ -36,6 +36,20 @@ int STM8::OP_NOP()
 }
 
 
+int STM8::OP_RIM()
+{
+    SetI(false, true);
+    return 1;
+}
+
+
+int STM8::OP_SIM()
+{
+    SetI(true, true);
+    return 1;
+}
+
+
 int STM8::OP_Prefix72()
 {
     u8 op = CPUFetch();

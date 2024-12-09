@@ -56,28 +56,6 @@
     template int STM8::func<STM8::Op_LongIndirectInd, false>();
 
 
-int STM8::OP_CLR_A()
-{
-    A = 0;
-    SetNZ(false, true);
-
-    return 1;
-}
-
-template<STM8::OperandType op, bool indY>
-int STM8::OP_CLR_Mem()
-{
-    u32 addr = CPUFetchOpAddr<op, indY>();
-
-    MemWrite(addr, 0);
-    SetNZ(false, true);
-
-    return OpIsIndirect(op) ? 4 : 1;
-}
-
-DeclTemplateLD(OP_CLR_Mem);
-
-
 int STM8::OP_LD_Imm()
 {
     u8 val = CPUFetch();
@@ -273,6 +251,42 @@ int STM8::OP_MOV_Mem()
 }*/
 
 
+int STM8::OP_POP_A()
+{
+    A = MemRead(++SP);
+    return 1;
+}
+
+int STM8::OP_POP_CC()
+{
+    CC = MemRead(++SP);
+    return 1;
+}
+
+int STM8::OP_POP_Mem()
+{
+    u32 addr = CPUFetchOpAddr<STM8::Op_LongDirect>();
+    u8 val = MemRead(++SP);
+    MemWrite(addr, val);
+    return 1;
+}
+
+
+template<bool indY>
+int STM8::OP_POPW()
+{
+    u16 val = (MemRead(++SP) << 8);
+    val |= MemRead(++SP);
+
+    if (indY) Y = val;
+    else      X = val;
+    return 2;
+}
+
+template int STM8::OP_POPW<false>();
+template int STM8::OP_POPW<true>();
+
+
 int STM8::OP_PUSH_A()
 {
     MemWrite(SP--, A);
@@ -299,3 +313,16 @@ int STM8::OP_PUSH_Mem()
     MemWrite(SP--, val);
     return 1;
 }
+
+
+template<bool indY>
+int STM8::OP_PUSHW()
+{
+    u16 val = indY ? Y : X;
+    MemWrite(SP--, val & 0xFF);
+    MemWrite(SP--, val >> 8);
+    return 2;
+}
+
+template int STM8::OP_PUSHW<false>();
+template int STM8::OP_PUSHW<true>();
