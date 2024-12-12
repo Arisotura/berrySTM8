@@ -129,6 +129,48 @@ private:
         if (h) CC |= Flag_H;
     }
 
+    template<typename T>
+    void SetFlagsAdd(T a, T m, T r, u8 mask)
+    {
+        CC &= ~(Flag_N | Flag_Z | mask);
+
+        T carry = ((a & m) | (m & (~r)) | (a & (~r)));
+        T topbit = 1 << ((8 * sizeof(T)) - 1);
+        T halfbit = 1 << ((4 * sizeof(T)) - 1);
+
+        if (r & topbit)
+            CC |= Flag_N;
+        if (!r)
+            CC |= Flag_Z;
+        if ((mask & Flag_C) && (carry & topbit))
+            CC |= Flag_C;
+        if ((mask & Flag_H) && (carry & halfbit))
+            CC |= Flag_H;
+        if ((mask & Flag_V) && ((carry ^ (carry << 1)) & topbit))
+            CC |= Flag_V;
+    }
+
+    template<typename T>
+    void SetFlagsSub(T a, T m, T r, u8 mask)
+    {
+        CC &= ~(Flag_N | Flag_Z | mask);
+
+        T carry = (((~a) & m) | ((~a) & r) | (a & m & r));
+        T topbit = 1 << ((8 * sizeof(T)) - 1);
+        T halfbit = 1 << ((4 * sizeof(T)) - 1);
+
+        if (r & topbit)
+            CC |= Flag_N;
+        if (!r)
+            CC |= Flag_Z;
+        if ((mask & Flag_C) && (carry & topbit))
+            CC |= Flag_C;
+        if ((mask & Flag_H) && (carry & halfbit))
+            CC |= Flag_H;
+        if ((mask & Flag_V) && ((carry ^ (carry << 1)) & topbit))
+            CC |= Flag_V;
+    }
+
     void SetI(bool i0, bool i1)
     {
         CC &= ~(Flag_I0 | Flag_I1);

@@ -56,72 +56,6 @@
     template int STM8::func<STM8::Op_LongIndirectInd, false>();
 
 
-inline bool CarryAdd4(u8 a, u8 b)
-{
-    return (0xF-a) < b;
-}
-
-inline bool CarryAdd8(u8 a, u8 b)
-{
-    return (0xFF-a) < b;
-}
-
-inline bool CarrySub8(u8 a, u8 b)
-{
-    u8 r = a - b;
-    return (((~a) & b) | ((~a) & r) | (a & b & r)) & 0x80;
-    return a >= b;
-}
-
-inline bool OverflowAdd8(u8 a, u8 b)
-{
-    u8 res = a + b;
-    return (!((a ^ b) & 0x80)) && ((a ^ res) & 0x80);
-}
-
-inline bool OverflowSub8(u8 a, u8 b)
-{
-    u8 res = a - b;
-    return ((a ^ b) & 0x80) && ((a ^ res) & 0x80);
-}
-
-inline bool OverflowAdc8(u8 a, u8 b, u8 carry)
-{
-    s32 fullResult = (s32)(s8)a + (s8)b + carry;
-    u8 res = a + b + carry;
-    return (s8)res != fullResult;
-}
-
-inline bool OverflowSbc8(u8 a, u8 b, u8 carry)
-{
-    s32 fullResult = (s32)(s8)a - (s8)b - carry;
-    u8 res = a - b - carry;
-    return (s8)res != fullResult;
-}
-
-inline bool CarryAdd16(u16 a, u16 b)
-{
-    return (0xFFFF-a) < b;
-}
-
-inline bool CarrySub16(u16 a, u16 b)
-{
-    return a >= b;
-}
-
-inline bool OverflowAdd16(u16 a, u16 b)
-{
-    u16 res = a + b;
-    return (!((a ^ b) & 0x8000)) && ((a ^ res) & 0x8000);
-}
-
-inline bool OverflowSub16(u16 a, u16 b)
-{
-    u16 res = a - b;
-    return ((a ^ b) & 0x8000) && ((a ^ res) & 0x8000);
-}
-
-
 int STM8::OP_ADD_Imm()
 {
     u8 a = A;
@@ -129,7 +63,7 @@ int STM8::OP_ADD_Imm()
 
     u8 val = a + b;
     A = val;
-    SetNZVCH((val & 0x80), (!val), OverflowAdd8(a, b), CarryAdd8(a, b), CarryAdd4(a&0xF, b&0xF));
+    SetFlagsAdd(a, b, val, Flag_V|Flag_C|Flag_H);
 
     return 1;
 }
@@ -144,7 +78,7 @@ int STM8::OP_ADD_Mem()
 
     u8 val = a + b;
     A = val;
-    SetNZVCH((val & 0x80), (!val), OverflowAdd8(a, b), CarryAdd8(a, b), CarryAdd4(a&0xF, b&0xF));
+    SetFlagsAdd(a, b, val, Flag_V|Flag_C|Flag_H);
 
     return OpIsIndirect(op) ? 4 : 1;
 }
@@ -162,7 +96,7 @@ int STM8::OP_ADDW_Imm()
     u16 val = a + b;
     if (indY) Y = val;
     else      X = val;
-    SetNZVCH((val & 0x8000), (!val), OverflowAdd16(a, b), CarryAdd16(a, b), CarryAdd8(a&0xFF, b&0xFF));
+    SetFlagsAdd(a, b, val, Flag_V|Flag_C|Flag_H);
 
     return 2;
 }
@@ -189,7 +123,7 @@ int STM8::OP_ADDW_Mem()
     u16 val = a + b;
     if (indY) Y = val;
     else      X = val;
-    SetNZVCH((val & 0x8000), (!val), OverflowAdd16(a, b), CarryAdd16(a, b), CarryAdd8(a&0xFF, b&0xFF));
+    SetFlagsAdd(a, b, val, Flag_V|Flag_C|Flag_H);
 
     return OpIsIndirect(op) ? 5 : 2;
 }
@@ -328,7 +262,7 @@ int STM8::OP_CP_Imm()
     u8 b = CPUFetch();
 
     u8 val = a - b;
-    SetNZVC((val & 0x80), (!val), OverflowSub8(a, b), CarrySub8(a, b));
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
 
     return 1;
 }
@@ -341,7 +275,7 @@ int STM8::OP_CP_Mem()
     u8 b = MemRead(addr);
 
     u8 val = a - b;
-    SetNZVC((val & 0x80), (!val), OverflowSub8(a, b), CarrySub8(a, b));
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
 
     return OpIsIndirect(op) ? 4 : 1;
 }
@@ -398,7 +332,7 @@ int STM8::OP_CPW_Imm()
     b |= CPUFetch();
 
     u16 val = a - b;
-    SetNZVC((val & 0x8000), (!val), OverflowSub16(a, b), CarrySub16(a, b));
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
 
     return 2;
 }
@@ -421,9 +355,9 @@ int STM8::OP_CPW_Mem()
 
     b = (MemRead(addr) << 8);
     b |= MemRead(addr+1);
-printf("[%06X] CPW: %04X vs %04X\n", PC, a, b);
+
     u16 val = a - b;
-    SetNZVC((val & 0x8000), (!val), OverflowSub16(a, b), CarrySub16(a, b));
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
 
     return OpIsIndirect(op) ? 5 : 2;
 }
@@ -436,7 +370,7 @@ int STM8::OP_DEC_A()
     u8 val = A;
 
     A--;
-    SetNZV((A & 0x80), (!A), OverflowSub8(val, 1));
+    SetFlagsSub(val, (u8)1, A, Flag_V);
     return 1;
 }
 
@@ -448,7 +382,7 @@ int STM8::OP_DEC_Mem()
 
     u8 nval = val - 1;
     MemWrite(addr, nval);
-    SetNZV((nval & 0x80), (!nval), OverflowSub8(val, 1));
+    SetFlagsSub(val, (u8)1, nval, Flag_V);
     return OpIsIndirect(op) ? 4 : 1;
 }
 
@@ -463,7 +397,7 @@ int STM8::OP_DECW()
 
     if (indY) Y = val;
     else      X = val;
-    SetNZV((val & 0x8000), (!val), OverflowSub16(oldval, 1));
+    SetFlagsSub(oldval, (u16)1, val, Flag_V);
 
     return 1;
 }
@@ -477,7 +411,7 @@ int STM8::OP_INC_A()
     u8 val = A;
 
     A++;
-    SetNZV((A & 0x80), (!A), OverflowAdd8(val, 1));
+    SetFlagsAdd(val, (u8)1, A, Flag_V);
     return 1;
 }
 
@@ -489,7 +423,7 @@ int STM8::OP_INC_Mem()
 
     u8 nval = val + 1;
     MemWrite(addr, nval);
-    SetNZV((nval & 0x80), (!nval), OverflowAdd8(val, 1));
+    SetFlagsAdd(val, (u8)1, nval, Flag_V);
     return OpIsIndirect(op) ? 4 : 1;
 }
 
@@ -504,7 +438,7 @@ int STM8::OP_INCW()
 
     if (indY) Y = val;
     else      X = val;
-    SetNZV((val & 0x8000), (!val), OverflowAdd16(oldval, 1));
+    SetFlagsAdd(oldval, (u16)1, val, Flag_V);
 
     return 1;
 }
@@ -749,7 +683,7 @@ int STM8::OP_SUB_Imm()
     // both ADD and ADDW do, and SUBW does
     u8 val = a - b;
     A = val;
-    SetNZVC((val & 0x80), (!val), OverflowSub8(a, b), CarrySub8(a, b));
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
 
     return 1;
 }
@@ -764,7 +698,7 @@ int STM8::OP_SUB_Mem()
 
     u8 val = a - b;
     A = val;
-    SetNZVC((val & 0x80), (!val), OverflowSub8(a, b), CarrySub8(a, b));
+    SetFlagsSub(a, b, val, Flag_V|Flag_C|Flag_H);
 
     return OpIsIndirect(op) ? 4 : 1;
 }
