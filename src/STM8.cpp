@@ -98,6 +98,7 @@ void STM8::CPUReset()
 
 void STM8::CPUJumpTo(u32 addr)
 {
+    printf("branch %06X -> %06X\n", PC, addr);
     PC = addr & 0xFFFFFF;
 }
 
@@ -230,7 +231,7 @@ int STM8::CPUExecute(int cycles)
         _lastop = op; // debug
         int cy = (this->*InstrTable[op])();
 
-        //printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+        printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
 
         // this will do the job for most cases
         // instructions are supposed to have decode cycles and execute cycles, but
@@ -261,6 +262,8 @@ u8 STM8::MemRead(u32 addr)
     {
         return IORead(addr);
     }
+
+    if (addr == 0x4808) return 2; // hack
 
     printf("STM8: unknown read %06X\n", addr);
     return 0;
@@ -307,6 +310,8 @@ u8 STM8::IORead(u32 addr)
     switch (addr)
     {
     case 0x5054: return FLASH_IAPSR;
+    case 0x514C: return 4;
+    case 0x53C3: return 3; // HACK
     }
 
     printf("STM8: unknown IO read %06X\n", addr);

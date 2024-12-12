@@ -50,6 +50,13 @@ int STM8::OP_SIM()
 }
 
 
+int STM8::OP_RVF()
+{
+    CC &= ~Flag_V;
+    return 1;
+}
+
+
 int STM8::OP_Prefix72()
 {
     u8 op = CPUFetch();

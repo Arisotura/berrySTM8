@@ -16,13 +16,80 @@
     with berrySTM8. If not, see http://www.gnu.org/licenses/.
 */
 
+#include <stdio.h>
 #include "STM8.h"
+
+
+template<int bit>
+int STM8::OP_BTJF()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    s8 offset = (s8)CPUFetch();
+
+    u8 val = MemRead(addr);
+    if (!(val & (1<<bit)))
+    {
+        CC |= Flag_C;
+        CPUJumpTo(PC + offset);
+        return 3;
+    }
+
+    CC &= ~Flag_C;
+    return 2;
+}
+
+template int STM8::OP_BTJF<0>();
+template int STM8::OP_BTJF<1>();
+template int STM8::OP_BTJF<2>();
+template int STM8::OP_BTJF<3>();
+template int STM8::OP_BTJF<4>();
+template int STM8::OP_BTJF<5>();
+template int STM8::OP_BTJF<6>();
+template int STM8::OP_BTJF<7>();
+
+
+template<int bit>
+int STM8::OP_BTJT()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    s8 offset = (s8)CPUFetch();
+
+    u8 val = MemRead(addr);
+    if (val & (1<<bit))
+    {
+        CC |= Flag_C;
+        CPUJumpTo(PC + offset);
+        return 3;
+    }
+
+    CC &= ~Flag_C;
+    return 2;
+}
+
+template int STM8::OP_BTJT<0>();
+template int STM8::OP_BTJT<1>();
+template int STM8::OP_BTJT<2>();
+template int STM8::OP_BTJT<3>();
+template int STM8::OP_BTJT<4>();
+template int STM8::OP_BTJT<5>();
+template int STM8::OP_BTJT<6>();
+template int STM8::OP_BTJT<7>();
+
+
+// call stack debug
+u32 call_pc[200];
+u32 call_sp[200];
+int call_level = 0;
 
 
 int STM8::OP_CALL_Imm()
 {
     u32 dst = (CPUFetch() << 8);
     dst |= CPUFetch();
+
+    call_pc[call_level] = PC;
+    call_sp[call_level] = SP;
+    call_level++;
 
     MemWrite(SP--, PC & 0xFF);
     MemWrite(SP--, (PC >> 8) & 0xFF);
@@ -35,6 +102,10 @@ int STM8::OP_CALL_Imm()
 int STM8::OP_CALLR()
 {
     s8 offset = (s8)CPUFetch();
+
+    call_pc[call_level] = PC;
+    call_sp[call_level] = SP;
+    call_level++;
 
     MemWrite(SP--, PC & 0xFF);
     MemWrite(SP--, (PC >> 8) & 0xFF);
@@ -53,6 +124,45 @@ int STM8::OP_INT()
     CPUJumpTo(dst);
     return 2;
 }
+
+
+int STM8::OP_JP_Imm()
+{
+    u32 dst = (CPUFetch() << 8);
+    dst |= CPUFetch();
+
+    CPUJumpTo((PC & 0xFF0000) | dst);
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_JP_Mem()
+{
+    /*u32 addr = CPUFetchOpAddr<op, indY>();
+    u32 dst = (MemRead(addr) << 8);
+    dst |= MemRead(addr+1);*/
+    u32 dst = CPUFetchOpAddr<op, indY>();
+
+    CPUJumpTo((PC & 0xFF0000) | dst);
+    if (OpIsIndirect(op))
+        return 5;
+    else if ((op == Op_ShortDirectInd || op == Op_LongDirectInd) && indY)
+        return 2; // ???
+    else
+        return 1;
+}
+
+template int STM8::OP_JP_Mem<STM8::Op_Ind,false>();
+template int STM8::OP_JP_Mem<STM8::Op_Ind,true>();
+template int STM8::OP_JP_Mem<STM8::Op_ShortDirectInd,false>();
+template int STM8::OP_JP_Mem<STM8::Op_ShortDirectInd,true>();
+template int STM8::OP_JP_Mem<STM8::Op_LongDirectInd,false>();
+template int STM8::OP_JP_Mem<STM8::Op_LongDirectInd,true>();
+template int STM8::OP_JP_Mem<STM8::Op_ShortIndirect,false>();
+template int STM8::OP_JP_Mem<STM8::Op_LongIndirect,false>();
+template int STM8::OP_JP_Mem<STM8::Op_ShortIndirectInd,false>();
+template int STM8::OP_JP_Mem<STM8::Op_ShortIndirectInd,true>();
+template int STM8::OP_JP_Mem<STM8::Op_LongIndirectInd,false>();
 
 
 int STM8::OP_JPF_Imm()
@@ -135,5 +245,18 @@ int STM8::OP_RET()
     pc |= MemRead(++SP);
 
     CPUJumpTo((PC & 0xFF0000) | pc);
+
+    if (call_level == 0)
+    {
+        printf("!! CALL STACK FUCKED: RET BUT LEVEL IS 0\n");
+    }
+    else
+    {
+        call_level--;
+        printf("RET: PC=%06X/%06X SP=%06X/%06X\n", PC, call_pc[call_level], SP, call_sp[call_level]);
+        if (PC != call_pc[call_level]) printf("!!! CALL STACK FUCKED: BAD PC\n");
+        if (SP != call_sp[call_level]) printf("!!! CALL STACK FUCKED: BAD SP\n");
+    }
+
     return 4;
 }
