@@ -233,11 +233,38 @@ private:
     u8 IORead(u32 addr);
     void IOWrite(u32 addr, u8 val);
 
+    // ---- I/O devices -------------------------
+
+    void MapIORange(STM8Device* dev, u32 start, u32 end);
+    friend class STM8Device;
+
+    STM8DMA* DMA;
+
+    STM8Device* IORegisters[0x1000];
+
     // ---- FLASH registers ---------------------
 
     u8 FLASH_PUKR;
     u8 FLASH_DUKR;
     u8 FLASH_IAPSR;
+};
+
+
+class STM8Device
+{
+public:
+    STM8Device(STM8* stm, u32 iobase) : STM(stm), IOBase(iobase) {}
+    virtual ~STM8Device() {}
+    virtual void Reset() = 0;
+
+    virtual u8 IORead(u32 addr) = 0;
+    virtual void IOWrite(u32 addr, u8 val) = 0;
+
+protected:
+    STM8* STM;
+    u32 IOBase;
+
+    void MapIORange(u32 first, u32 last) { STM->MapIORange(this, IOBase+first, IOBase+last); }
 };
 
 #endif // STM8_H

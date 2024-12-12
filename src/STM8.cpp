@@ -20,6 +20,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "STM8.h"
+#include "DMA.h"
 
 
 STM8::STM8()
@@ -45,11 +46,15 @@ STM8::STM8()
     memset(RAM, 0, RAMSize);
     memset(EEPROM, 0, EEPROMSize);
     memset(FLASH, 0, FLASHSize);
+
+    memset(IORegisters, 0, sizeof(IORegisters));
+
+    DMA = new STM8DMA(this, 0x5070);
 }
 
 STM8::~STM8()
 {
-    //
+    delete DMA;
 }
 
 void STM8::Reset()
@@ -231,7 +236,7 @@ int STM8::CPUExecute(int cycles)
         _lastop = op; // debug
         int cy = (this->*InstrTable[op])();
 
-        printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+        //printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
 
         // this will do the job for most cases
         // instructions are supposed to have decode cycles and execute cycles, but
@@ -240,6 +245,16 @@ int STM8::CPUExecute(int cycles)
     }
 
     return count;
+}
+
+
+void STM8::MapIORange(STM8Device* dev, u32 start, u32 end)
+{
+    start &= 0xFFF;
+    end &= 0xFFF;
+
+    for (u32 addr = start; addr <= end; addr++)
+        IORegisters[addr] = dev;
 }
 
 
@@ -307,6 +322,11 @@ void STM8::MemWrite(u32 addr, u8 val)
 
 u8 STM8::IORead(u32 addr)
 {
+    auto dev = IORegisters[addr & 0xFFF];
+    if (dev)
+        return dev->IORead(addr);
+
+    // TODO remove these hacks
     switch (addr)
     {
     case 0x5054: return FLASH_IAPSR;
@@ -320,7 +340,10 @@ u8 STM8::IORead(u32 addr)
 
 void STM8::IOWrite(u32 addr, u8 val)
 {
-    // TODO: make the addressing flexible
+    auto dev = IORegisters[addr & 0xFFF];
+    if (dev)
+        return dev->IOWrite(addr, val);
+
     switch (addr)
     {
     case 0x5052:

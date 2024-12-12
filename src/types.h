@@ -30,4 +30,8 @@ typedef int16_t     s16;
 typedef int32_t     s32;
 typedef int64_t     s64;
 
+class STM8;
+class STM8Device;
+class STM8DMA;
+
 #endif // TYPES_H
