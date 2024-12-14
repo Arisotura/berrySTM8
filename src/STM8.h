@@ -239,6 +239,7 @@ private:
     friend class STM8Device;
 
     STM8DMA* DMA;
+    STM8I2C* I2C;
 
     STM8Device* IORegisters[0x800];
 

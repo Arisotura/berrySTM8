@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include "STM8.h"
 #include "DMA.h"
+#include "I2C.h"
 
 
 STM8::STM8()
@@ -50,10 +51,12 @@ STM8::STM8()
     memset(IORegisters, 0, sizeof(IORegisters));
 
     DMA = new STM8DMA(this, 0x5070);
+    I2C = new STM8I2C(this, 0x5210);
 }
 
 STM8::~STM8()
 {
+    delete I2C;
     delete DMA;
 }
 
@@ -68,6 +71,7 @@ void STM8::Reset()
     FLASH_IAPSR = 0x40;
 
     DMA->Reset();
+    I2C->Reset();
 }
 
 

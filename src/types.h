@@ -33,5 +33,6 @@ typedef int64_t     s64;
 class STM8;
 class STM8Device;
 class STM8DMA;
+class STM8I2C;
 
 #endif // TYPES_H
