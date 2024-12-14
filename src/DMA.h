@@ -39,6 +39,12 @@ private:
     u32 ChanPAddr[4];   // peripheral address, or memory 1 address for chan 3
     u32 ChanMAddr[4];   // memory address, or memory 0 address for chan 3
 
+    u8 ChanReloadLength[4];
+    u32 ChanCurPAddr[4];
+    u32 ChanCurMAddr[4];
+
+    void SetCnt(u8 val);
+
     bool ChanIsRunning(int chan)
     {
         if (!(Cnt & (1<<0))) return false;
@@ -49,6 +55,9 @@ private:
 
     void SetChanCnt(int chan, u8 val);
     void SetChanStatus(int chan, u8 val);
+
+    void KickDMA(int chan);
+    void RunMemoryDMA(int chan);
 };
 
 #endif // DMA_H

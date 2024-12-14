@@ -324,7 +324,7 @@ void STM8::MemWrite(u32 addr, u8 val)
 
 u8 STM8::IORead(u32 addr)
 {
-    auto dev = IORegisters[addr & 0xFFF];
+    auto dev = IORegisters[addr & 0x7FF];
     if (dev)
         return dev->IORead(addr);
 
@@ -342,7 +342,7 @@ u8 STM8::IORead(u32 addr)
 
 void STM8::IOWrite(u32 addr, u8 val)
 {
-    auto dev = IORegisters[addr & 0xFFF];
+    auto dev = IORegisters[addr & 0x7FF];
     if (dev)
         return dev->IOWrite(addr, val);
 

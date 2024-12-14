@@ -98,14 +98,7 @@ void STM8DMA::IOWrite(u32 addr, u8 val)
     addr -= IOBase;
     switch (addr)
     {
-    case 0x00:
-        printf("GCNT=%02X (old=%02X)\n", val, Cnt);
-        if (((Cnt & 0x03) == 0x03) && (val & (1<<0))) // GEN and GB set
-            Cnt = (Cnt & 0xFE) | (val & 0x01);
-        else
-            Cnt = (Cnt & 0x02) | (val & 0xFD);
-        return;
-
+    case 0x00: SetCnt(val); return;
     case 0x01: return;
 
     case 0x05: SetChanCnt(0, val); return;
@@ -213,10 +206,32 @@ void STM8DMA::IOWrite(u32 addr, u8 val)
 }
 
 
+void STM8DMA::SetCnt(u8 val)
+{
+    u8 oldcnt = Cnt;
+
+    printf("GCNT=%02X (old=%02X)\n", val, Cnt);
+    if (((Cnt & 0x03) == 0x03) && (val & (1<<0))) // GEN and GB set
+        Cnt = (Cnt & 0xFE) | (val & 0x01);
+    else
+        Cnt = (Cnt & 0x02) | (val & 0xFD);
+
+    if ((!(oldcnt & (1<<0))) && (Cnt & (1<<0)))
+    {
+        KickDMA(0);
+        KickDMA(1);
+        KickDMA(2);
+        KickDMA(3);
+    }
+}
+
+
 void STM8DMA::SetChanCnt(int chan, u8 val)
 {
     if (ChanIsRunning(chan) && (val & (1<<0)))
         return;
+
+    u8 oldcnt = ChanCnt[chan];
 
     if (chan == 3)
     {
@@ -232,8 +247,8 @@ void STM8DMA::SetChanCnt(int chan, u8 val)
         ChanCnt[chan] = val & 0x3F;
     }
 
-    printf("DMA%d / GCNT=%02X IRQ=%02X / CNT=%02X STA=%02X P=%06X M=%06X LEN=%02X\n",
-           chan, Cnt, IntStatus, val, ChanStatus[chan], ChanPAddr[chan], ChanMAddr[chan], ChanLength[chan]);
+    if ((!(oldcnt & (1<<0))) && (ChanCnt[chan] & (1<<0)))
+        KickDMA(chan);
 }
 
 void STM8DMA::SetChanStatus(int chan, u8 val)
@@ -243,4 +258,95 @@ void STM8DMA::SetChanStatus(int chan, u8 val)
 
     if (!(val & (1<<1))) ChanStatus[chan] &= ~(1<<1);
     if (!(val & (1<<2))) ChanStatus[chan] &= ~(1<<2);
+}
+
+
+void STM8DMA::KickDMA(int chan)
+{
+    if (!(Cnt & (1<<0))) return;
+    if (!(ChanCnt[chan] & (1<<0))) return;
+
+    printf("KICK DMA%d / GCNT=%02X IRQ=%02X / CNT=%02X STA=%02X P=%06X M=%06X LEN=%02X\n",
+           chan, Cnt, IntStatus, ChanCnt[chan], ChanStatus[chan], ChanPAddr[chan], ChanMAddr[chan], ChanLength[chan]);
+
+    ChanReloadLength[chan] = ChanLength[chan];
+    ChanCurPAddr[chan] = ChanPAddr[chan];
+    ChanCurMAddr[chan] = ChanMAddr[chan];
+
+    if (Cnt & (1<<6))
+    {
+        RunMemoryDMA(chan);
+    }
+    else
+    {
+        // TODO
+    }
+}
+
+void STM8DMA::RunMemoryDMA(int chan)
+{
+    if (chan != 3)
+    {
+        printf("DMA: ????\n");
+        return;
+    }
+
+    // TODO: not make this instant, eventually
+
+    int srcinc = 1;
+    int dstinc = (ChanCnt[chan] & (1<<5)) ? 1 : -1;
+
+    if (ChanStatus[chan] & (1<<3))
+    {
+        // 16-bit transfer
+
+        while (ChanLength[chan] != 0)
+        {
+            u8 msb = STM->MemRead(ChanCurMAddr[chan]);
+            ChanCurMAddr[chan] += srcinc;
+            ChanCurMAddr[chan] &= 0x1FFFF;
+
+            u8 lsb = STM->MemRead(ChanCurMAddr[chan]);
+            ChanCurMAddr[chan] += srcinc;
+            ChanCurMAddr[chan] &= 0x1FFFF;
+
+            STM->MemWrite(ChanCurPAddr[chan], msb);
+            ChanCurPAddr[chan] += dstinc;
+            ChanCurPAddr[chan] &= 0x1FFF;
+
+            STM->MemWrite(ChanCurPAddr[chan], lsb);
+            ChanCurPAddr[chan] += dstinc;
+            ChanCurPAddr[chan] &= 0x1FFF;
+
+            ChanLength[chan] -= 2;
+
+            if (ChanLength[chan] == 1)
+            {
+                printf("DMA: bad length %02X for 16-bit transfer\n", ChanReloadLength[chan]);
+                break;
+            }
+        }
+    }
+    else
+    {
+        // 8-bit transfer
+
+        while (ChanLength[chan] != 0)
+        {
+            u8 val = STM->MemRead(ChanCurMAddr[chan]);
+            ChanCurMAddr[chan] += srcinc;
+            ChanCurMAddr[chan] &= 0x1FFFF;
+
+            STM->MemWrite(ChanCurPAddr[chan], val);
+            ChanCurPAddr[chan] += dstinc;
+            ChanCurPAddr[chan] &= 0x1FFF;
+
+            ChanLength[chan]--;
+        }
+    }
+
+    ChanStatus[chan] |= (1<<2); // half transaction flag
+    ChanStatus[chan] |= (1<<1); // end of transaction flag
+
+    // TODO: raise interrupt
 }
