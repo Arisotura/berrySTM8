@@ -30,7 +30,25 @@ public:
     void IOWrite(u32 addr, u8 val) override;
 
 private:
-    //
+    u8 Cnt;
+    u8 IntStatus;
+
+    u8 ChanCnt[4];
+    u8 ChanStatus[4];
+    u8 ChanLength[4];
+    u32 ChanPAddr[4];   // peripheral address, or memory 1 address for chan 3
+    u32 ChanMAddr[4];   // memory address, or memory 0 address for chan 3
+
+    bool ChanIsRunning(int chan)
+    {
+        if (!(Cnt & (1<<0))) return false;
+        if (!(ChanCnt[chan] & (1<<0))) return false;
+        if (!(ChanStatus[chan] & (1<<7))) return false;
+        return true;
+    }
+
+    void SetChanCnt(int chan, u8 val);
+    void SetChanStatus(int chan, u8 val);
 };
 
 #endif // DMA_H

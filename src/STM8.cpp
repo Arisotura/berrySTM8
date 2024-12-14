@@ -66,6 +66,8 @@ void STM8::Reset()
     FLASH_PUKR = 0;
     FLASH_DUKR = 0;
     FLASH_IAPSR = 0x40;
+
+    DMA->Reset();
 }
 
 
@@ -103,7 +105,7 @@ void STM8::CPUReset()
 
 void STM8::CPUJumpTo(u32 addr)
 {
-    printf("branch %06X -> %06X\n", PC, addr);
+    //printf("branch %06X -> %06X\n", PC, addr);
     PC = addr & 0xFFFFFF;
 }
 

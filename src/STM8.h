@@ -240,7 +240,7 @@ private:
 
     STM8DMA* DMA;
 
-    STM8Device* IORegisters[0x1000];
+    STM8Device* IORegisters[0x800];
 
     // ---- FLASH registers ---------------------
 
