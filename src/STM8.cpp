@@ -66,6 +66,7 @@ void STM8::Reset()
 
     for (int i = 0; i < 30; i++)
         IntPrio[i] = 3;
+    IntMask = 0;
 
     memset(RAM, 0, RAMSize);
 
@@ -107,6 +108,8 @@ void STM8::CPUReset()
     SP = 0;
     PC = 0x8000;
     CC = 0x28;
+
+    NextIRQ = -1;
 }
 
 
@@ -114,6 +117,28 @@ void STM8::CPUJumpTo(u32 addr)
 {
     //printf("branch %06X -> %06X\n", PC, addr);
     PC = addr & 0xFFFFFF;
+}
+
+void STM8::CPUTriggerIRQ(int irq)
+{
+    printf("SERVICE IRQ %d %04X\n", irq, 0x8008+(irq<<2));
+
+    MemWrite(SP--, PC & 0xFF);
+    MemWrite(SP--, (PC >> 8) & 0xFF);
+    MemWrite(SP--, PC >> 16);
+    MemWrite(SP--, Y & 0xFF);
+    MemWrite(SP--, Y >> 8);
+    MemWrite(SP--, X & 0xFF);
+    MemWrite(SP--, X >> 8);
+    MemWrite(SP--, A);
+    MemWrite(SP--, CC);
+
+    u8 prio = IntPrio[irq];
+    CC &= ~(Flag_I0|Flag_I1);
+    CC |= ((prio & 0x1) << 3) | ((prio & 0x2) << 4);
+
+    CPUJumpTo(0x8008 + (irq<<2));
+    // TODO: the exception should probably take some cycles to be processed
 }
 
 u8 STM8::CPUFetch()
@@ -251,9 +276,50 @@ int STM8::CPUExecute(int cycles)
         // instructions are supposed to have decode cycles and execute cycles, but
         // the documentation isn't complete
         count += cy;//(cy - 1);
+
+        if (NextIRQ != -1)
+        {
+            CPUTriggerIRQ(NextIRQ);
+            NextIRQ = -1;
+        }
     }
 
     return count;
+}
+
+
+void STM8::TriggerIRQ(int irq)
+{
+    IntMask |= (1<<irq);
+    UpdateIRQ();
+}
+
+void STM8::UpdateIRQ()
+{
+    u8 priolevels[4] = {2, 1, 0, 3};
+    u8 curprio = ((CC >> 3) & 0x1) | ((CC >> 4) & 0x2);
+    u8 curlev = priolevels[curprio];
+
+    for (int j = 3; j > 0; j--)
+    {
+        for (int i = 0; i < 30; i++)
+        {
+            if (!(IntMask & (1<<i)))
+                continue;
+
+            u8 irqprio = IntPrio[i];
+            u8 irqlev = priolevels[irqprio];
+            if (irqlev != j)
+                continue;
+            if (irqlev <= curlev) // checkme
+                continue;
+
+            NextIRQ = i;
+            IntMask &= ~(1<<i); // checkme
+            printf("triggering IRQ %d\n", i);
+            return;
+        }
+    }
 }
 
 
@@ -298,7 +364,7 @@ u8 STM8::MemRead(u32 addr)
     case 0x7F74: return IntPrio[16] | (IntPrio[17] << 2) | (IntPrio[18] << 4) | (IntPrio[19] << 6);
     case 0x7F75: return IntPrio[20] | (IntPrio[21] << 2) | (IntPrio[22] << 4) | (IntPrio[23] << 6);
     case 0x7F76: return IntPrio[24] | (IntPrio[25] << 2) | (IntPrio[26] << 4) | (IntPrio[27] << 6);
-    case 0x7F77: return IntPrio[28] | (IntPrio[29] << 2);
+    case 0x7F77: return IntPrio[28] | (IntPrio[29] << 2) | 0xF0;
     }
 
     printf("STM8: unknown read %06X\n", addr);
@@ -340,50 +406,50 @@ void STM8::MemWrite(u32 addr, u8 val)
     switch (addr)
     {
     case 0x7F70:
-        IntPrio[0] = val & 0x3;
-        IntPrio[1] = (val >> 2) & 0x3;
-        IntPrio[2] = (val >> 4) & 0x3;
-        IntPrio[3] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[0] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[1] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[2] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[3] = val >> 6;
         return;
     case 0x7F71:
-        IntPrio[4] = val & 0x3;
-        IntPrio[5] = (val >> 2) & 0x3;
-        IntPrio[6] = (val >> 4) & 0x3;
-        IntPrio[7] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[4] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[5] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[6] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[7] = val >> 6;
         return;
     case 0x7F72:
-        IntPrio[8] = val & 0x3;
-        IntPrio[9] = (val >> 2) & 0x3;
-        IntPrio[10] = (val >> 4) & 0x3;
-        IntPrio[11] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[8] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[9] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[10] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[11] = val >> 6;
         return;
     case 0x7F73:
-        IntPrio[12] = val & 0x3;
-        IntPrio[13] = (val >> 2) & 0x3;
-        IntPrio[14] = (val >> 4) & 0x3;
-        IntPrio[15] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[12] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[13] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[14] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[15] = val >> 6;
         return;
     case 0x7F74:
-        IntPrio[16] = val & 0x3;
-        IntPrio[17] = (val >> 2) & 0x3;
-        IntPrio[18] = (val >> 4) & 0x3;
-        IntPrio[19] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[16] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[17] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[18] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[19] = val >> 6;
         return;
     case 0x7F75:
-        IntPrio[20] = val & 0x3;
-        IntPrio[21] = (val >> 2) & 0x3;
-        IntPrio[22] = (val >> 4) & 0x3;
-        IntPrio[23] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[20] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[21] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[22] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[23] = val >> 6;
         return;
     case 0x7F76:
-        IntPrio[24] = val & 0x3;
-        IntPrio[25] = (val >> 2) & 0x3;
-        IntPrio[26] = (val >> 4) & 0x3;
-        IntPrio[27] = val >> 6;
+        if ((val & 0x03) != 0x02) IntPrio[24] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[25] = (val >> 2) & 0x3;
+        if ((val & 0x30) != 0x20) IntPrio[26] = (val >> 4) & 0x3;
+        if ((val & 0xC0) != 0x80) IntPrio[27] = val >> 6;
         return;
     case 0x7F77:
-        IntPrio[28] = val & 0x3;
-        IntPrio[29] = (val >> 2) & 0x3;
+        if ((val & 0x03) != 0x02) IntPrio[28] = val & 0x3;
+        if ((val & 0x0C) != 0x08) IntPrio[29] = (val >> 2) & 0x3;
         return;
     }
 

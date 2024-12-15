@@ -42,6 +42,8 @@ private:
 
     void SetCnt0(u8 val);
     void SetCnt1(u8 val);
+
+    void TriggerIRQ();
 };
 
 #endif // I2C_H

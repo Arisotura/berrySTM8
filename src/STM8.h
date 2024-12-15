@@ -33,8 +33,11 @@ public:
 
     void CPUReset();
     void CPUJumpTo(u32 addr);
+    void CPUTriggerIRQ(int irq);
     u8 CPUFetch();
     int CPUExecute(int cycles);
+
+    void TriggerIRQ(int irq);
 
     u8 MemRead(u32 addr);
     void MemWrite(u32 addr, u8 val);
@@ -86,6 +89,8 @@ private:
     u8 CC;
 
     u16 _lastop;
+
+    s8 NextIRQ;
 
     void SetNZ(bool n, bool z)
     {
@@ -215,6 +220,9 @@ private:
     // ---- IRQ ---------------------------------
 
     u8 IntPrio[30];
+    u32 IntMask;
+
+    void UpdateIRQ();
 
     // ---- memory ------------------------------
 

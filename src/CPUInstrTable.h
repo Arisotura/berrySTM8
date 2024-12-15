@@ -113,6 +113,7 @@ template<int bit> int OP_BTJT();
 int OP_CALL_Imm();
 int OP_CALLR();
 int OP_INT();
+int OP_IRET();
 int OP_JP_Imm();
 template<OperandType op, bool indY> int OP_JP_Mem();
 int OP_JPF_Imm();
@@ -212,7 +213,7 @@ InstrFunc InstrTable[256] =
     &STM8::OP_INC_Mem<Op_Ind,false>, &STM8::OP_TNZ_Mem<Op_Ind,false>, &STM8::OP_UNK,                   &STM8::OP_CLR_Mem<Op_Ind,false>,
 
     // 80
-    &STM8::OP_UNK,    &STM8::OP_RET,          &STM8::OP_INT,     &STM8::OP_UNK,
+    &STM8::OP_IRET,   &STM8::OP_RET,          &STM8::OP_INT,     &STM8::OP_UNK,
     &STM8::OP_POP_A,  &STM8::OP_POPW<false>,  &STM8::OP_POP_CC,  &STM8::OP_UNK,
     &STM8::OP_PUSH_A, &STM8::OP_PUSHW<false>, &STM8::OP_PUSH_CC, &STM8::OP_UNK,
     &STM8::OP_UNK,    &STM8::OP_UNK,          &STM8::OP_UNK,     &STM8::OP_UNK,

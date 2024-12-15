@@ -106,5 +106,12 @@ void STM8I2C::SetCnt1(u8 val)
     {
         printf("I2C: START\n");
         Status[0] |= (1<<0); // signal start condition
+        TriggerIRQ();
     }
+}
+
+
+void STM8I2C::TriggerIRQ()
+{
+    STM->TriggerIRQ(29);
 }

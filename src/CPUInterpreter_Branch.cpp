@@ -126,6 +126,23 @@ int STM8::OP_INT()
 }
 
 
+int STM8::OP_IRET()
+{
+    CC = MemRead(++SP);
+    A = MemRead(++SP);
+    X = (MemRead(++SP) << 8);
+    X |= MemRead(++SP);
+    Y = (MemRead(++SP) << 8);
+    Y |= MemRead(++SP);
+    u32 pc = (MemRead(++SP) << 16);
+    pc |= (MemRead(++SP) << 8);
+    pc |= MemRead(++SP);
+
+    CPUJumpTo(pc);
+    return 11;
+}
+
+
 int STM8::OP_JP_Imm()
 {
     u32 dst = (CPUFetch() << 8);
