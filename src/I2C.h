@@ -30,7 +30,18 @@ public:
     void IOWrite(u32 addr, u8 val) override;
 
 private:
-    //
+    u8 Cnt[2];
+    u8 Freq;
+    u8 OwnAddr[3];
+    u8 Data;
+    u8 Status[3];
+    u8 IntCnt;
+    u16 ClockCnt;
+    u8 TRISE;
+    u8 PEC;
+
+    void SetCnt0(u8 val);
+    void SetCnt1(u8 val);
 };
 
 #endif // I2C_H

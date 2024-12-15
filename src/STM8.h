@@ -212,6 +212,10 @@ private:
 
 #include "CPUInstrTable.h"
 
+    // ---- IRQ ---------------------------------
+
+    u8 IntPrio[30];
+
     // ---- memory ------------------------------
 
     u8* RAM;

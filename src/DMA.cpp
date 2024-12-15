@@ -28,7 +28,6 @@ STM8DMA::STM8DMA(STM8* stm, u32 iobase) : STM8Device(stm, iobase)
 
 STM8DMA::~STM8DMA()
 {
-    //
 }
 
 void STM8DMA::Reset()

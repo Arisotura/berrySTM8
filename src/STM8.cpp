@@ -64,6 +64,9 @@ void STM8::Reset()
 {
     CPUReset();
 
+    for (int i = 0; i < 30; i++)
+        IntPrio[i] = 3;
+
     memset(RAM, 0, RAMSize);
 
     FLASH_PUKR = 0;
@@ -103,7 +106,7 @@ void STM8::CPUReset()
     Y = 0;
     SP = 0;
     PC = 0x8000;
-    CC = 0;
+    CC = 0x28;
 }
 
 
@@ -284,7 +287,19 @@ u8 STM8::MemRead(u32 addr)
         return IORead(addr);
     }
 
-    if (addr == 0x4808) return 2; // hack
+    switch (addr)
+    {
+    case 0x4808: return 2; // hack (option byte)
+
+    case 0x7F70: return IntPrio[0] | (IntPrio[1] << 2) | (IntPrio[2] << 4) | (IntPrio[3] << 6);
+    case 0x7F71: return IntPrio[4] | (IntPrio[5] << 2) | (IntPrio[6] << 4) | (IntPrio[7] << 6);
+    case 0x7F72: return IntPrio[8] | (IntPrio[9] << 2) | (IntPrio[10] << 4) | (IntPrio[11] << 6);
+    case 0x7F73: return IntPrio[12] | (IntPrio[13] << 2) | (IntPrio[14] << 4) | (IntPrio[15] << 6);
+    case 0x7F74: return IntPrio[16] | (IntPrio[17] << 2) | (IntPrio[18] << 4) | (IntPrio[19] << 6);
+    case 0x7F75: return IntPrio[20] | (IntPrio[21] << 2) | (IntPrio[22] << 4) | (IntPrio[23] << 6);
+    case 0x7F76: return IntPrio[24] | (IntPrio[25] << 2) | (IntPrio[26] << 4) | (IntPrio[27] << 6);
+    case 0x7F77: return IntPrio[28] | (IntPrio[29] << 2);
+    }
 
     printf("STM8: unknown read %06X\n", addr);
     return 0;
@@ -319,6 +334,56 @@ void STM8::MemWrite(u32 addr, u8 val)
     else if ((addr >= 0x5000) && (addr < 0x5800))
     {
         IOWrite(addr, val);
+        return;
+    }
+
+    switch (addr)
+    {
+    case 0x7F70:
+        IntPrio[0] = val & 0x3;
+        IntPrio[1] = (val >> 2) & 0x3;
+        IntPrio[2] = (val >> 4) & 0x3;
+        IntPrio[3] = val >> 6;
+        return;
+    case 0x7F71:
+        IntPrio[4] = val & 0x3;
+        IntPrio[5] = (val >> 2) & 0x3;
+        IntPrio[6] = (val >> 4) & 0x3;
+        IntPrio[7] = val >> 6;
+        return;
+    case 0x7F72:
+        IntPrio[8] = val & 0x3;
+        IntPrio[9] = (val >> 2) & 0x3;
+        IntPrio[10] = (val >> 4) & 0x3;
+        IntPrio[11] = val >> 6;
+        return;
+    case 0x7F73:
+        IntPrio[12] = val & 0x3;
+        IntPrio[13] = (val >> 2) & 0x3;
+        IntPrio[14] = (val >> 4) & 0x3;
+        IntPrio[15] = val >> 6;
+        return;
+    case 0x7F74:
+        IntPrio[16] = val & 0x3;
+        IntPrio[17] = (val >> 2) & 0x3;
+        IntPrio[18] = (val >> 4) & 0x3;
+        IntPrio[19] = val >> 6;
+        return;
+    case 0x7F75:
+        IntPrio[20] = val & 0x3;
+        IntPrio[21] = (val >> 2) & 0x3;
+        IntPrio[22] = (val >> 4) & 0x3;
+        IntPrio[23] = val >> 6;
+        return;
+    case 0x7F76:
+        IntPrio[24] = val & 0x3;
+        IntPrio[25] = (val >> 2) & 0x3;
+        IntPrio[26] = (val >> 4) & 0x3;
+        IntPrio[27] = val >> 6;
+        return;
+    case 0x7F77:
+        IntPrio[28] = val & 0x3;
+        IntPrio[29] = (val >> 2) & 0x3;
         return;
     }
 
