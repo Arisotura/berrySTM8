@@ -244,11 +244,17 @@ int STM8::OP_MOV_Imm()
     return 1;
 }
 
-/*template<STM8::OperandType op>
+template<STM8::OperandType op>
 int STM8::OP_MOV_Mem()
 {
-    u32
-}*/
+    u32 src = CPUFetchOpAddr<op>();
+    u32 dst = CPUFetchOpAddr<op>();
+    MemWrite(dst, MemRead(src));
+    return 1;
+}
+
+template int STM8::OP_MOV_Mem<STM8::Op_ShortDirect>();
+template int STM8::OP_MOV_Mem<STM8::Op_LongDirect>();
 
 
 int STM8::OP_POP_A()
@@ -260,6 +266,7 @@ int STM8::OP_POP_A()
 int STM8::OP_POP_CC()
 {
     CC = MemRead(++SP);
+    UpdateIRQ();
     return 1;
 }
 

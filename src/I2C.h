@@ -42,6 +42,7 @@ private:
 
     void SetCnt0(u8 val);
     void SetCnt1(u8 val);
+    void SendData(u8 val);
 
     void TriggerIRQ();
 };

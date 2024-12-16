@@ -82,6 +82,8 @@ void STM8I2C::IOWrite(u32 addr, u8 val)
     {
     case 0x00: SetCnt0(val); return;
     case 0x01: SetCnt1(val); return;
+
+    case 0x06: SendData(val); return;
     }
 
     printf("I2C: unknown write %04X %02X\n", addr+IOBase, val);
@@ -108,6 +110,16 @@ void STM8I2C::SetCnt1(u8 val)
         Status[0] |= (1<<0); // signal start condition
         TriggerIRQ();
     }
+}
+
+void STM8I2C::SendData(u8 val)
+{
+    printf("I2C: SEND %02X\n", val);
+
+    Status[0] &= ~0xCD; // clear status bits
+
+    Status[0] |= (1<<7);
+    TriggerIRQ();
 }
 
 

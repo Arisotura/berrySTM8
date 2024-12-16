@@ -139,6 +139,7 @@ int STM8::OP_IRET()
     pc |= MemRead(++SP);
 
     CPUJumpTo(pc);
+    UpdateIRQ();
     return 11;
 }
 

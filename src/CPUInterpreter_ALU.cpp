@@ -56,6 +56,38 @@
     template int STM8::func<STM8::Op_LongIndirectInd, false>();
 
 
+int STM8::OP_ADC_Imm()
+{
+    u8 a = A;
+    u8 b = CPUFetch();
+
+    u8 val = a + b;
+    if (CC & Flag_C) val++;
+    A = val;
+    SetFlagsAdd(a, b, val, Flag_V|Flag_C|Flag_H);
+
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_ADC_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+
+    u8 a = A;
+    u8 b = MemRead(addr);
+
+    u8 val = a + b;
+    if (CC & Flag_C) val++;
+    A = val;
+    SetFlagsAdd(a, b, val, Flag_V|Flag_C|Flag_H);
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_ADC_Mem)
+
+
 int STM8::OP_ADD_Imm()
 {
     u8 a = A;
@@ -590,6 +622,40 @@ template int STM8::OP_RRWA<false>();
 template int STM8::OP_RRWA<true>();
 
 
+int STM8::OP_SBC_Imm()
+{
+    u8 a = A;
+    u8 b = CPUFetch();
+
+    // TODO: does SBC set the H flag or not?
+    // ADC does set it
+    u8 val = a - b;
+    if (CC & Flag_C) val--;
+    A = val;
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
+
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_SBC_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+
+    u8 a = A;
+    u8 b = MemRead(addr);
+
+    u8 val = a - b;
+    if (CC & Flag_C) val--;
+    A = val;
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_SBC_Mem)
+
+
 int STM8::OP_SLL_A()
 {
     u8 val = A;
@@ -710,7 +776,7 @@ int STM8::OP_SUB_Mem()
 
     u8 val = a - b;
     A = val;
-    SetFlagsSub(a, b, val, Flag_V|Flag_C|Flag_H);
+    SetFlagsSub(a, b, val, Flag_V|Flag_C);
 
     return OpIsIndirect(op) ? 4 : 1;
 }

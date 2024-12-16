@@ -39,6 +39,7 @@ int STM8::OP_NOP()
 int STM8::OP_RIM()
 {
     SetI(false, true);
+    UpdateIRQ();
     return 1;
 }
 
@@ -46,6 +47,7 @@ int STM8::OP_RIM()
 int STM8::OP_SIM()
 {
     SetI(true, true);
+    UpdateIRQ();
     return 1;
 }
 
