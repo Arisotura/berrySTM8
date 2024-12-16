@@ -38,10 +38,12 @@ template<OperandType op, bool indY> int OP_ADDW_Mem();
 int OP_ADDW_SP();
 int OP_AND_Imm();
 template<OperandType op, bool indY> int OP_AND_Mem();
-template<int bit> int OP_BRES();
-template<int bit> int OP_BSET();
+template<int bit> int OP_BCCM();
 int OP_BCP_Imm();
 template<OperandType op, bool indY> int OP_BCP_Mem();
+template<int bit> int OP_BCPL();
+template<int bit> int OP_BRES();
+template<int bit> int OP_BSET();
 int OP_CLR_A();
 template<OperandType op, bool indY> int OP_CLR_Mem();
 template<bool indY> int OP_CLRW();
@@ -357,10 +359,10 @@ InstrFunc InstrTable90[256] =
     &STM8::OP_UNK, &STM8::OP_UNK,        &STM8::OP_UNK,        &STM8::OP_UNK,
 
     // 10
-    &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
+    &STM8::OP_BCPL<0>, &STM8::OP_BCCM<0>, &STM8::OP_BCPL<1>, &STM8::OP_BCCM<1>,
+    &STM8::OP_BCPL<2>, &STM8::OP_BCCM<2>, &STM8::OP_BCPL<3>, &STM8::OP_BCCM<3>,
+    &STM8::OP_BCPL<4>, &STM8::OP_BCCM<4>, &STM8::OP_BCPL<5>, &STM8::OP_BCCM<5>,
+    &STM8::OP_BCPL<6>, &STM8::OP_BCCM<6>, &STM8::OP_BCPL<7>, &STM8::OP_BCCM<7>,
 
     // 20
     &STM8::OP_UNK,           &STM8::OP_UNK,          &STM8::OP_UNK, &STM8::OP_UNK,

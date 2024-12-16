@@ -197,6 +197,30 @@ int STM8::OP_AND_Mem()
 DeclTemplate(OP_AND_Mem)
 
 
+template<int bit>
+int STM8::OP_BCCM()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    u8 val = MemRead(addr);
+    if (CC & Flag_C)
+        val |= (1<<bit);
+    else
+        val &= ~(1<<bit);
+    MemWrite(addr, val);
+
+    return 1;
+}
+
+template int STM8::OP_BCCM<0>();
+template int STM8::OP_BCCM<1>();
+template int STM8::OP_BCCM<2>();
+template int STM8::OP_BCCM<3>();
+template int STM8::OP_BCCM<4>();
+template int STM8::OP_BCCM<5>();
+template int STM8::OP_BCCM<6>();
+template int STM8::OP_BCCM<7>();
+
+
 int STM8::OP_BCP_Imm()
 {
     u8 val = CPUFetch();
@@ -218,6 +242,27 @@ int STM8::OP_BCP_Mem()
 }
 
 DeclTemplate(OP_BCP_Mem)
+
+
+template<int bit>
+int STM8::OP_BCPL()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    u8 val = MemRead(addr);
+    val ^= (1<<bit);
+    MemWrite(addr, val);
+
+    return 1;
+}
+
+template int STM8::OP_BCPL<0>();
+template int STM8::OP_BCPL<1>();
+template int STM8::OP_BCPL<2>();
+template int STM8::OP_BCPL<3>();
+template int STM8::OP_BCPL<4>();
+template int STM8::OP_BCPL<5>();
+template int STM8::OP_BCPL<6>();
+template int STM8::OP_BCPL<7>();
 
 
 template<int bit>
