@@ -80,6 +80,25 @@ int STM8::OP_SIM()
 }
 
 
+int STM8::OP_TRAP()
+{
+    MemWrite(SP--, PC & 0xFF);
+    MemWrite(SP--, (PC >> 8) & 0xFF);
+    MemWrite(SP--, PC >> 16);
+    MemWrite(SP--, Y & 0xFF);
+    MemWrite(SP--, Y >> 8);
+    MemWrite(SP--, X & 0xFF);
+    MemWrite(SP--, X >> 8);
+    MemWrite(SP--, A);
+    MemWrite(SP--, CC);
+
+    CC |= (Flag_I0|Flag_I1);
+
+    CPUJumpTo(0x8004);
+    return 9;
+}
+
+
 int STM8::OP_Prefix72()
 {
     u8 op = CPUFetch();

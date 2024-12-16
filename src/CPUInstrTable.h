@@ -24,6 +24,7 @@ int OP_RIM();
 int OP_RVF();
 int OP_SIM();
 int OP_SCF();
+int OP_TRAP();
 int OP_Prefix72();
 int OP_Prefix90();
 int OP_Prefix91();
@@ -205,7 +206,7 @@ InstrFunc InstrTable[256] =
     &STM8::OP_INC_Mem<Op_Ind,false>, &STM8::OP_TNZ_Mem<Op_Ind,false>, &STM8::OP_SWAP_Mem<Op_Ind,false>, &STM8::OP_CLR_Mem<Op_Ind,false>,
 
     // 80
-    &STM8::OP_IRET,   &STM8::OP_RET,                      &STM8::OP_INT,     &STM8::OP_UNK,
+    &STM8::OP_IRET,   &STM8::OP_RET,                      &STM8::OP_INT,     &STM8::OP_TRAP,
     &STM8::OP_POP_A,  &STM8::OP_POPW<false>,              &STM8::OP_POP_CC,  &STM8::OP_RETF,
     &STM8::OP_PUSH_A, &STM8::OP_PUSHW<false>,             &STM8::OP_PUSH_CC, &STM8::OP_UNK,
     &STM8::OP_CCF,    &STM8::OP_CALLF<Op_ExtendedDirect>, &STM8::OP_UNK,     &STM8::OP_UNK,
