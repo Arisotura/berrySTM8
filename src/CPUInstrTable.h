@@ -58,6 +58,7 @@ template<bool indY> int OP_INCW();
 template<bool indY> int OP_MUL();
 int OP_NEG_A();
 template<OperandType op, bool indY> int OP_NEG_Mem();
+template<bool intY> int OP_NEGW();
 int OP_OR_Imm();
 template<OperandType op, bool indY> int OP_OR_Mem();
 template<bool indY> int OP_RLWA();
@@ -75,6 +76,8 @@ template<bool indY> int OP_SRLW();
 int OP_SUB_Imm();
 template<OperandType op, bool indY> int OP_SUB_Mem();
 int OP_SUB_SP();
+template<bool indY> int OP_SUBW_Imm();
+template<OperandType op, bool indY> int OP_SUBW_Mem();
 template<bool indY> int OP_SWAPW();
 int OP_TNZ_A();
 template<OperandType op, bool indY> int OP_TNZ_Mem();
@@ -85,6 +88,7 @@ template<OperandType op, bool indY> int OP_XOR_Mem();
 template<int bit> int OP_BTJF();
 template<int bit> int OP_BTJT();
 int OP_CALL_Imm();
+template<OperandType op, bool indY> int OP_CALL_Mem();
 int OP_CALLR();
 int OP_INT();
 int OP_IRET();
@@ -141,7 +145,7 @@ InstrFunc InstrTable[256] =
     &STM8::OP_SUB_Mem<Op_ShortDirectSP,false>, &STM8::OP_CP_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                             &STM8::OP_CPW_Mem<Op_ShortDirectSP,false>,
     &STM8::OP_AND_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                            &STM8::OP_LDW_Ind<Op_ShortDirectSP,true>,  &STM8::OP_LDW_Mem<Op_ShortDirectSP,true>,
     &STM8::OP_XOR_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                            &STM8::OP_OR_Mem<Op_ShortDirectSP,false>,  &STM8::OP_ADD_Mem<Op_ShortDirectSP,false>,
-    &STM8::OP_ADDW_Imm<false>,                 &STM8::OP_UNK,                            &STM8::OP_LDW_Ind<Op_ShortDirectSP,false>, &STM8::OP_LDW_Mem<Op_ShortDirectSP,false>,
+    &STM8::OP_ADDW_Imm<false>,                 &STM8::OP_SUBW_Imm<false>,                &STM8::OP_LDW_Ind<Op_ShortDirectSP,false>, &STM8::OP_LDW_Mem<Op_ShortDirectSP,false>,
 
     // 20
     &STM8::OP_JRcc<Cond_T>,   &STM8::OP_JRcc<Cond_F>,   &STM8::OP_JRcc<Cond_UGT>, &STM8::OP_JRcc<Cond_ULE>,
@@ -162,7 +166,7 @@ InstrFunc InstrTable[256] =
     &STM8::OP_INC_A, &STM8::OP_TNZ_A,                   &STM8::OP_UNK,        &STM8::OP_CLR_A,
 
     // 50
-    &STM8::OP_UNK,         &STM8::OP_UNK,                    &STM8::OP_SUB_SP,       &STM8::OP_CPLW<false>,
+    &STM8::OP_NEGW<false>, &STM8::OP_UNK,                    &STM8::OP_SUB_SP,       &STM8::OP_CPLW<false>,
     &STM8::OP_SRLW<false>, &STM8::OP_MOV_Mem<Op_LongDirect>, &STM8::OP_UNK,          &STM8::OP_UNK,
     &STM8::OP_SLLW<false>, &STM8::OP_UNK,                    &STM8::OP_DECW<false>,  &STM8::OP_ADDW_SP,
     &STM8::OP_INCW<false>, &STM8::OP_TNZW<false>,            &STM8::OP_SWAPW<false>, &STM8::OP_CLRW<false>,
@@ -210,22 +214,22 @@ InstrFunc InstrTable[256] =
     &STM8::OP_JP_Imm,                       &STM8::OP_CALL_Imm,                     &STM8::OP_LDW_Ind<Op_LongDirect,false>, &STM8::OP_LDW_Mem<Op_LongDirect,false>,
 
     // D0
-    &STM8::OP_SUB_Mem<Op_LongDirectInd,false>, &STM8::OP_CP_Mem<Op_LongDirectInd,false>,  &STM8::OP_SBC_Mem<Op_LongDirectInd,false>, &STM8::OP_CPW_Mem<Op_LongDirectInd,false>,
-    &STM8::OP_AND_Mem<Op_LongDirectInd,false>, &STM8::OP_BCP_Mem<Op_LongDirectInd,false>, &STM8::OP_LD_A<Op_LongDirectInd,false>,    &STM8::OP_LD_Mem<Op_LongDirectInd,false>,
-    &STM8::OP_XOR_Mem<Op_LongDirectInd,false>, &STM8::OP_ADC_Mem<Op_LongDirectInd,false>, &STM8::OP_OR_Mem<Op_LongDirectInd,false>,  &STM8::OP_ADD_Mem<Op_LongDirectInd,false>,
-    &STM8::OP_JP_Mem<Op_LongDirectInd,false>,  &STM8::OP_UNK,                             &STM8::OP_LDW_Ind<Op_LongDirectInd,false>, &STM8::OP_LDW_Mem<Op_LongDirectInd,false>,
+    &STM8::OP_SUB_Mem<Op_LongDirectInd,false>, &STM8::OP_CP_Mem<Op_LongDirectInd,false>,   &STM8::OP_SBC_Mem<Op_LongDirectInd,false>, &STM8::OP_CPW_Mem<Op_LongDirectInd,false>,
+    &STM8::OP_AND_Mem<Op_LongDirectInd,false>, &STM8::OP_BCP_Mem<Op_LongDirectInd,false>,  &STM8::OP_LD_A<Op_LongDirectInd,false>,    &STM8::OP_LD_Mem<Op_LongDirectInd,false>,
+    &STM8::OP_XOR_Mem<Op_LongDirectInd,false>, &STM8::OP_ADC_Mem<Op_LongDirectInd,false>,  &STM8::OP_OR_Mem<Op_LongDirectInd,false>,  &STM8::OP_ADD_Mem<Op_LongDirectInd,false>,
+    &STM8::OP_JP_Mem<Op_LongDirectInd,false>,  &STM8::OP_CALL_Mem<Op_LongDirectInd,false>, &STM8::OP_LDW_Ind<Op_LongDirectInd,false>, &STM8::OP_LDW_Mem<Op_LongDirectInd,false>,
 
     // E0
-    &STM8::OP_SUB_Mem<Op_ShortDirectInd,false>, &STM8::OP_CP_Mem<Op_ShortDirectInd,false>,  &STM8::OP_SBC_Mem<Op_ShortDirectInd,false>, &STM8::OP_CPW_Mem<Op_ShortDirectInd,false>,
-    &STM8::OP_AND_Mem<Op_ShortDirectInd,false>, &STM8::OP_BCP_Mem<Op_ShortDirectInd,false>, &STM8::OP_LD_A<Op_ShortDirectInd,false>,    &STM8::OP_LD_Mem<Op_ShortDirectInd,false>,
-    &STM8::OP_XOR_Mem<Op_ShortDirectInd,false>, &STM8::OP_ADC_Mem<Op_ShortDirectInd,false>, &STM8::OP_OR_Mem<Op_ShortDirectInd,false>,  &STM8::OP_ADD_Mem<Op_ShortDirectInd,false>,
-    &STM8::OP_JP_Mem<Op_ShortDirectInd,false>,  &STM8::OP_UNK,                              &STM8::OP_LDW_Ind<Op_ShortDirectInd,false>, &STM8::OP_LDW_Mem<Op_ShortDirectInd,false>,
+    &STM8::OP_SUB_Mem<Op_ShortDirectInd,false>, &STM8::OP_CP_Mem<Op_ShortDirectInd,false>,   &STM8::OP_SBC_Mem<Op_ShortDirectInd,false>, &STM8::OP_CPW_Mem<Op_ShortDirectInd,false>,
+    &STM8::OP_AND_Mem<Op_ShortDirectInd,false>, &STM8::OP_BCP_Mem<Op_ShortDirectInd,false>,  &STM8::OP_LD_A<Op_ShortDirectInd,false>,    &STM8::OP_LD_Mem<Op_ShortDirectInd,false>,
+    &STM8::OP_XOR_Mem<Op_ShortDirectInd,false>, &STM8::OP_ADC_Mem<Op_ShortDirectInd,false>,  &STM8::OP_OR_Mem<Op_ShortDirectInd,false>,  &STM8::OP_ADD_Mem<Op_ShortDirectInd,false>,
+    &STM8::OP_JP_Mem<Op_ShortDirectInd,false>,  &STM8::OP_CALL_Mem<Op_ShortDirectInd,false>, &STM8::OP_LDW_Ind<Op_ShortDirectInd,false>, &STM8::OP_LDW_Mem<Op_ShortDirectInd,false>,
 
     // F0
-    &STM8::OP_SUB_Mem<Op_Ind,false>, &STM8::OP_CP_Mem<Op_Ind,false>,  &STM8::OP_SBC_Mem<Op_Ind,false>, &STM8::OP_CPW_Mem<Op_Ind,false>,
-    &STM8::OP_AND_Mem<Op_Ind,false>, &STM8::OP_BCP_Mem<Op_Ind,false>, &STM8::OP_LD_A<Op_Ind,false>,    &STM8::OP_LD_Mem<Op_Ind,false>,
-    &STM8::OP_XOR_Mem<Op_Ind,false>, &STM8::OP_ADC_Mem<Op_Ind,false>, &STM8::OP_OR_Mem<Op_Ind,false>,  &STM8::OP_ADD_Mem<Op_Ind,false>,
-    &STM8::OP_JP_Mem<Op_Ind,false>,  &STM8::OP_UNK,                   &STM8::OP_LDW_Ind<Op_Ind,false>, &STM8::OP_LDW_Mem<Op_Ind,false>
+    &STM8::OP_SUB_Mem<Op_Ind,false>, &STM8::OP_CP_Mem<Op_Ind,false>,   &STM8::OP_SBC_Mem<Op_Ind,false>, &STM8::OP_CPW_Mem<Op_Ind,false>,
+    &STM8::OP_AND_Mem<Op_Ind,false>, &STM8::OP_BCP_Mem<Op_Ind,false>,  &STM8::OP_LD_A<Op_Ind,false>,    &STM8::OP_LD_Mem<Op_Ind,false>,
+    &STM8::OP_XOR_Mem<Op_Ind,false>, &STM8::OP_ADC_Mem<Op_Ind,false>,  &STM8::OP_OR_Mem<Op_Ind,false>,  &STM8::OP_ADD_Mem<Op_Ind,false>,
+    &STM8::OP_JP_Mem<Op_Ind,false>,  &STM8::OP_CALL_Mem<Op_Ind,false>, &STM8::OP_LDW_Ind<Op_Ind,false>, &STM8::OP_LDW_Mem<Op_Ind,false>
 };
 
 InstrFunc InstrTable72[256] =
@@ -291,28 +295,28 @@ InstrFunc InstrTable72[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
 
     // A0
-    &STM8::OP_UNK, &STM8::OP_UNK,            &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK,            &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_ADDW_Imm<true>, &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK,            &STM8::OP_UNK, &STM8::OP_UNK,
+    &STM8::OP_UNK, &STM8::OP_UNK,            &STM8::OP_SUBW_Imm<true>, &STM8::OP_UNK,
+    &STM8::OP_UNK, &STM8::OP_UNK,            &STM8::OP_UNK,            &STM8::OP_UNK,
+    &STM8::OP_UNK, &STM8::OP_ADDW_Imm<true>, &STM8::OP_UNK,            &STM8::OP_UNK,
+    &STM8::OP_UNK, &STM8::OP_UNK,            &STM8::OP_UNK,            &STM8::OP_UNK,
 
     // B0
-    &STM8::OP_UNK, &STM8::OP_UNK,                          &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK,                          &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_ADDW_Mem<Op_LongDirect,true>, &STM8::OP_UNK, &STM8::OP_ADDW_Mem<Op_LongDirect,false>,
-    &STM8::OP_UNK, &STM8::OP_UNK,                          &STM8::OP_UNK, &STM8::OP_UNK,
+    &STM8::OP_SUBW_Mem<Op_LongDirect,false>, &STM8::OP_UNK,                          &STM8::OP_SUBW_Mem<Op_LongDirect,true>, &STM8::OP_UNK,
+    &STM8::OP_UNK,                           &STM8::OP_UNK,                          &STM8::OP_UNK,                          &STM8::OP_UNK,
+    &STM8::OP_UNK,                           &STM8::OP_ADDW_Mem<Op_LongDirect,true>, &STM8::OP_UNK,                          &STM8::OP_ADDW_Mem<Op_LongDirect,false>,
+    &STM8::OP_UNK,                           &STM8::OP_UNK,                          &STM8::OP_UNK,                          &STM8::OP_UNK,
 
     // C0
-    &STM8::OP_SUB_Mem<Op_LongIndirect,false>, &STM8::OP_CP_Mem<Op_LongIndirect,false>,  &STM8::OP_SBC_Mem<Op_LongIndirect,false>, &STM8::OP_CPW_Mem<Op_LongIndirect,false>,
-    &STM8::OP_AND_Mem<Op_LongIndirect,false>, &STM8::OP_BCP_Mem<Op_LongIndirect,false>, &STM8::OP_LD_A<Op_LongIndirect,false>,    &STM8::OP_LD_Mem<Op_LongIndirect,false>,
-    &STM8::OP_XOR_Mem<Op_LongIndirect,false>, &STM8::OP_ADC_Mem<Op_LongIndirect,false>, &STM8::OP_OR_Mem<Op_LongIndirect,false>,  &STM8::OP_ADD_Mem<Op_LongIndirect,false>,
-    &STM8::OP_JP_Mem<Op_LongIndirect,false>,  &STM8::OP_UNK,                            &STM8::OP_LDW_Ind<Op_LongIndirect,false>, &STM8::OP_LDW_Mem<Op_LongIndirect,false>,
+    &STM8::OP_SUB_Mem<Op_LongIndirect,false>, &STM8::OP_CP_Mem<Op_LongIndirect,false>,   &STM8::OP_SBC_Mem<Op_LongIndirect,false>, &STM8::OP_CPW_Mem<Op_LongIndirect,false>,
+    &STM8::OP_AND_Mem<Op_LongIndirect,false>, &STM8::OP_BCP_Mem<Op_LongIndirect,false>,  &STM8::OP_LD_A<Op_LongIndirect,false>,    &STM8::OP_LD_Mem<Op_LongIndirect,false>,
+    &STM8::OP_XOR_Mem<Op_LongIndirect,false>, &STM8::OP_ADC_Mem<Op_LongIndirect,false>,  &STM8::OP_OR_Mem<Op_LongIndirect,false>,  &STM8::OP_ADD_Mem<Op_LongIndirect,false>,
+    &STM8::OP_JP_Mem<Op_LongIndirect,false>,  &STM8::OP_CALL_Mem<Op_LongIndirect,false>, &STM8::OP_LDW_Ind<Op_LongIndirect,false>, &STM8::OP_LDW_Mem<Op_LongIndirect,false>,
 
     // D0
-    &STM8::OP_SUB_Mem<Op_LongIndirectInd,false>, &STM8::OP_CP_Mem<Op_LongIndirectInd,false>,  &STM8::OP_SBC_Mem<Op_LongIndirectInd,false>, &STM8::OP_CPW_Mem<Op_LongIndirectInd,false>,
-    &STM8::OP_AND_Mem<Op_LongIndirectInd,false>, &STM8::OP_BCP_Mem<Op_LongIndirectInd,false>, &STM8::OP_LD_A<Op_LongIndirectInd,false>,    &STM8::OP_LD_Mem<Op_LongIndirectInd,false>,
-    &STM8::OP_XOR_Mem<Op_LongIndirectInd,false>, &STM8::OP_ADC_Mem<Op_LongIndirectInd,false>, &STM8::OP_OR_Mem<Op_LongIndirectInd,false>,  &STM8::OP_ADD_Mem<Op_LongIndirectInd,false>,
-    &STM8::OP_JP_Mem<Op_LongIndirectInd,false>,  &STM8::OP_UNK,                               &STM8::OP_LDW_Ind<Op_LongIndirectInd,false>, &STM8::OP_LDW_Mem<Op_LongIndirectInd,false>,
+    &STM8::OP_SUB_Mem<Op_LongIndirectInd,false>, &STM8::OP_CP_Mem<Op_LongIndirectInd,false>,   &STM8::OP_SBC_Mem<Op_LongIndirectInd,false>, &STM8::OP_CPW_Mem<Op_LongIndirectInd,false>,
+    &STM8::OP_AND_Mem<Op_LongIndirectInd,false>, &STM8::OP_BCP_Mem<Op_LongIndirectInd,false>,  &STM8::OP_LD_A<Op_LongIndirectInd,false>,    &STM8::OP_LD_Mem<Op_LongIndirectInd,false>,
+    &STM8::OP_XOR_Mem<Op_LongIndirectInd,false>, &STM8::OP_ADC_Mem<Op_LongIndirectInd,false>,  &STM8::OP_OR_Mem<Op_LongIndirectInd,false>,  &STM8::OP_ADD_Mem<Op_LongIndirectInd,false>,
+    &STM8::OP_JP_Mem<Op_LongIndirectInd,false>,  &STM8::OP_CALL_Mem<Op_LongIndirectInd,false>, &STM8::OP_LDW_Ind<Op_LongIndirectInd,false>, &STM8::OP_LDW_Mem<Op_LongIndirectInd,false>,
 
     // E0
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
@@ -321,10 +325,10 @@ InstrFunc InstrTable72[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
 
     // F0
-    &STM8::OP_UNK, &STM8::OP_UNK,                             &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_UNK,                             &STM8::OP_UNK, &STM8::OP_UNK,
-    &STM8::OP_UNK, &STM8::OP_ADDW_Mem<Op_ShortDirectSP,true>, &STM8::OP_UNK, &STM8::OP_ADDW_Mem<Op_ShortDirectSP,false>,
-    &STM8::OP_UNK, &STM8::OP_UNK,                             &STM8::OP_UNK, &STM8::OP_UNK
+    &STM8::OP_SUBW_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                             &STM8::OP_SUBW_Mem<Op_ShortDirectSP,true>, &STM8::OP_UNK,
+    &STM8::OP_UNK,                              &STM8::OP_UNK,                             &STM8::OP_UNK,                             &STM8::OP_UNK,
+    &STM8::OP_UNK,                              &STM8::OP_ADDW_Mem<Op_ShortDirectSP,true>, &STM8::OP_UNK,                             &STM8::OP_ADDW_Mem<Op_ShortDirectSP,false>,
+    &STM8::OP_UNK,                              &STM8::OP_UNK,                             &STM8::OP_UNK,                             &STM8::OP_UNK
 };
 
 InstrFunc InstrTable90[256] =
@@ -360,7 +364,7 @@ InstrFunc InstrTable90[256] =
     &STM8::OP_INC_Mem<Op_LongDirectInd,true>, &STM8::OP_TNZ_Mem<Op_LongDirectInd,true>, &STM8::OP_UNK,                            &STM8::OP_CLR_Mem<Op_LongDirectInd,true>,
 
     // 50
-    &STM8::OP_UNK,        &STM8::OP_UNK,        &STM8::OP_UNK,         &STM8::OP_CPLW<true>,
+    &STM8::OP_NEGW<true>, &STM8::OP_UNK,        &STM8::OP_UNK,         &STM8::OP_CPLW<true>,
     &STM8::OP_SRLW<true>, &STM8::OP_UNK,        &STM8::OP_UNK,         &STM8::OP_UNK,
     &STM8::OP_SLLW<true>, &STM8::OP_UNK,        &STM8::OP_DECW<true>,  &STM8::OP_UNK,
     &STM8::OP_INCW<true>, &STM8::OP_TNZW<true>, &STM8::OP_SWAPW<true>, &STM8::OP_CLRW<true>,
@@ -408,22 +412,22 @@ InstrFunc InstrTable90[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_LDW_Ind<Op_LongDirect,true>, &STM8::OP_LDW_Mem<Op_LongDirect,true>,
 
     // D0
-    &STM8::OP_SUB_Mem<Op_LongDirectInd,true>, &STM8::OP_CP_Mem<Op_LongDirectInd,true>,  &STM8::OP_SBC_Mem<Op_LongDirectInd,true>, &STM8::OP_CPW_Mem<Op_LongDirectInd,true>,
-    &STM8::OP_AND_Mem<Op_LongDirectInd,true>, &STM8::OP_BCP_Mem<Op_LongDirectInd,true>, &STM8::OP_LD_A<Op_LongDirectInd,true>,    &STM8::OP_LD_Mem<Op_LongDirectInd,true>,
-    &STM8::OP_XOR_Mem<Op_LongDirectInd,true>, &STM8::OP_ADC_Mem<Op_LongDirectInd,true>, &STM8::OP_OR_Mem<Op_LongDirectInd,true>,  &STM8::OP_ADD_Mem<Op_LongDirectInd,true>,
-    &STM8::OP_JP_Mem<Op_LongDirectInd,true>,  &STM8::OP_UNK,                            &STM8::OP_LDW_Ind<Op_LongDirectInd,true>, &STM8::OP_LDW_Mem<Op_LongDirectInd,true>,
+    &STM8::OP_SUB_Mem<Op_LongDirectInd,true>, &STM8::OP_CP_Mem<Op_LongDirectInd,true>,   &STM8::OP_SBC_Mem<Op_LongDirectInd,true>, &STM8::OP_CPW_Mem<Op_LongDirectInd,true>,
+    &STM8::OP_AND_Mem<Op_LongDirectInd,true>, &STM8::OP_BCP_Mem<Op_LongDirectInd,true>,  &STM8::OP_LD_A<Op_LongDirectInd,true>,    &STM8::OP_LD_Mem<Op_LongDirectInd,true>,
+    &STM8::OP_XOR_Mem<Op_LongDirectInd,true>, &STM8::OP_ADC_Mem<Op_LongDirectInd,true>,  &STM8::OP_OR_Mem<Op_LongDirectInd,true>,  &STM8::OP_ADD_Mem<Op_LongDirectInd,true>,
+    &STM8::OP_JP_Mem<Op_LongDirectInd,true>,  &STM8::OP_CALL_Mem<Op_LongDirectInd,true>, &STM8::OP_LDW_Ind<Op_LongDirectInd,true>, &STM8::OP_LDW_Mem<Op_LongDirectInd,true>,
 
     // E0
-    &STM8::OP_SUB_Mem<Op_ShortDirectInd,true>, &STM8::OP_CP_Mem<Op_ShortDirectInd,true>,  &STM8::OP_SBC_Mem<Op_ShortDirectInd,true>, &STM8::OP_CPW_Mem<Op_ShortDirectInd,true>,
-    &STM8::OP_AND_Mem<Op_ShortDirectInd,true>, &STM8::OP_BCP_Mem<Op_ShortDirectInd,true>, &STM8::OP_LD_A<Op_ShortDirectInd,true>,    &STM8::OP_LD_Mem<Op_ShortDirectInd,true>,
-    &STM8::OP_XOR_Mem<Op_ShortDirectInd,true>, &STM8::OP_ADC_Mem<Op_ShortDirectInd,true>, &STM8::OP_OR_Mem<Op_ShortDirectInd,true>,  &STM8::OP_ADD_Mem<Op_ShortDirectInd,true>,
-    &STM8::OP_JP_Mem<Op_ShortDirectInd,true>,  &STM8::OP_UNK,                             &STM8::OP_LDW_Ind<Op_ShortDirectInd,true>, &STM8::OP_LDW_Mem<Op_ShortDirectInd,true>,
+    &STM8::OP_SUB_Mem<Op_ShortDirectInd,true>, &STM8::OP_CP_Mem<Op_ShortDirectInd,true>,   &STM8::OP_SBC_Mem<Op_ShortDirectInd,true>, &STM8::OP_CPW_Mem<Op_ShortDirectInd,true>,
+    &STM8::OP_AND_Mem<Op_ShortDirectInd,true>, &STM8::OP_BCP_Mem<Op_ShortDirectInd,true>,  &STM8::OP_LD_A<Op_ShortDirectInd,true>,    &STM8::OP_LD_Mem<Op_ShortDirectInd,true>,
+    &STM8::OP_XOR_Mem<Op_ShortDirectInd,true>, &STM8::OP_ADC_Mem<Op_ShortDirectInd,true>,  &STM8::OP_OR_Mem<Op_ShortDirectInd,true>,  &STM8::OP_ADD_Mem<Op_ShortDirectInd,true>,
+    &STM8::OP_JP_Mem<Op_ShortDirectInd,true>,  &STM8::OP_CALL_Mem<Op_ShortDirectInd,true>, &STM8::OP_LDW_Ind<Op_ShortDirectInd,true>, &STM8::OP_LDW_Mem<Op_ShortDirectInd,true>,
 
     // F0
-    &STM8::OP_SUB_Mem<Op_Ind,true>, &STM8::OP_CP_Mem<Op_Ind,true>,  &STM8::OP_SBC_Mem<Op_Ind,true>, &STM8::OP_CPW_Mem<Op_Ind,true>,
-    &STM8::OP_AND_Mem<Op_Ind,true>, &STM8::OP_BCP_Mem<Op_Ind,true>, &STM8::OP_LD_A<Op_Ind,true>,    &STM8::OP_LD_Mem<Op_Ind,true>,
-    &STM8::OP_XOR_Mem<Op_Ind,true>, &STM8::OP_ADC_Mem<Op_Ind,true>, &STM8::OP_OR_Mem<Op_Ind,true>,  &STM8::OP_ADD_Mem<Op_Ind,true>,
-    &STM8::OP_JP_Mem<Op_Ind,true>,  &STM8::OP_UNK,                  &STM8::OP_LDW_Ind<Op_Ind,true>, &STM8::OP_LDW_Mem<Op_Ind,true>
+    &STM8::OP_SUB_Mem<Op_Ind,true>, &STM8::OP_CP_Mem<Op_Ind,true>,   &STM8::OP_SBC_Mem<Op_Ind,true>, &STM8::OP_CPW_Mem<Op_Ind,true>,
+    &STM8::OP_AND_Mem<Op_Ind,true>, &STM8::OP_BCP_Mem<Op_Ind,true>,  &STM8::OP_LD_A<Op_Ind,true>,    &STM8::OP_LD_Mem<Op_Ind,true>,
+    &STM8::OP_XOR_Mem<Op_Ind,true>, &STM8::OP_ADC_Mem<Op_Ind,true>,  &STM8::OP_OR_Mem<Op_Ind,true>,  &STM8::OP_ADD_Mem<Op_Ind,true>,
+    &STM8::OP_JP_Mem<Op_Ind,true>,  &STM8::OP_CALL_Mem<Op_Ind,true>, &STM8::OP_LDW_Ind<Op_Ind,true>, &STM8::OP_LDW_Mem<Op_Ind,true>
 };
 
 InstrFunc InstrTable91[256] =
@@ -507,10 +511,10 @@ InstrFunc InstrTable91[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_LDW_Ind<Op_ShortIndirect,true>, &STM8::OP_LDW_Mem<Op_ShortIndirect,true>,
 
     // D0
-    &STM8::OP_SUB_Mem<Op_ShortIndirectInd,true>, &STM8::OP_CP_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_SBC_Mem<Op_ShortIndirectInd,true>, &STM8::OP_CPW_Mem<Op_ShortIndirectInd,true>,
-    &STM8::OP_AND_Mem<Op_ShortIndirectInd,true>, &STM8::OP_BCP_Mem<Op_ShortIndirectInd,true>, &STM8::OP_LD_A<Op_ShortIndirectInd,true>,    &STM8::OP_LD_Mem<Op_ShortIndirectInd,true>,
-    &STM8::OP_XOR_Mem<Op_ShortIndirectInd,true>, &STM8::OP_ADC_Mem<Op_ShortIndirectInd,true>, &STM8::OP_OR_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_ADD_Mem<Op_ShortIndirectInd,true>,
-    &STM8::OP_JP_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_UNK,                               &STM8::OP_LDW_Ind<Op_ShortIndirectInd,true>, &STM8::OP_LDW_Mem<Op_ShortIndirectInd,true>,
+    &STM8::OP_SUB_Mem<Op_ShortIndirectInd,true>, &STM8::OP_CP_Mem<Op_ShortIndirectInd,true>,   &STM8::OP_SBC_Mem<Op_ShortIndirectInd,true>, &STM8::OP_CPW_Mem<Op_ShortIndirectInd,true>,
+    &STM8::OP_AND_Mem<Op_ShortIndirectInd,true>, &STM8::OP_BCP_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_LD_A<Op_ShortIndirectInd,true>,    &STM8::OP_LD_Mem<Op_ShortIndirectInd,true>,
+    &STM8::OP_XOR_Mem<Op_ShortIndirectInd,true>, &STM8::OP_ADC_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_OR_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_ADD_Mem<Op_ShortIndirectInd,true>,
+    &STM8::OP_JP_Mem<Op_ShortIndirectInd,true>,  &STM8::OP_CALL_Mem<Op_ShortIndirectInd,true>, &STM8::OP_LDW_Ind<Op_ShortIndirectInd,true>, &STM8::OP_LDW_Mem<Op_ShortIndirectInd,true>,
 
     // E0
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
@@ -600,16 +604,16 @@ InstrFunc InstrTable92[256] =
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,
 
     // C0
-    &STM8::OP_SUB_Mem<Op_ShortIndirect,false>, &STM8::OP_CP_Mem<Op_ShortIndirect,false>,  &STM8::OP_SBC_Mem<Op_ShortIndirect,false>, &STM8::OP_CPW_Mem<Op_ShortIndirect,false>,
-    &STM8::OP_AND_Mem<Op_ShortIndirect,false>, &STM8::OP_BCP_Mem<Op_ShortIndirect,false>, &STM8::OP_LD_A<Op_ShortIndirect,false>,    &STM8::OP_LD_Mem<Op_ShortIndirect,false>,
-    &STM8::OP_XOR_Mem<Op_ShortIndirect,false>, &STM8::OP_ADC_Mem<Op_ShortIndirect,false>, &STM8::OP_OR_Mem<Op_ShortIndirect,false>,  &STM8::OP_ADD_Mem<Op_ShortIndirect,false>,
-    &STM8::OP_JP_Mem<Op_ShortIndirect,false>,  &STM8::OP_UNK,                             &STM8::OP_LDW_Ind<Op_ShortIndirect,false>, &STM8::OP_LDW_Mem<Op_ShortIndirect,false>,
+    &STM8::OP_SUB_Mem<Op_ShortIndirect,false>, &STM8::OP_CP_Mem<Op_ShortIndirect,false>,   &STM8::OP_SBC_Mem<Op_ShortIndirect,false>, &STM8::OP_CPW_Mem<Op_ShortIndirect,false>,
+    &STM8::OP_AND_Mem<Op_ShortIndirect,false>, &STM8::OP_BCP_Mem<Op_ShortIndirect,false>,  &STM8::OP_LD_A<Op_ShortIndirect,false>,    &STM8::OP_LD_Mem<Op_ShortIndirect,false>,
+    &STM8::OP_XOR_Mem<Op_ShortIndirect,false>, &STM8::OP_ADC_Mem<Op_ShortIndirect,false>,  &STM8::OP_OR_Mem<Op_ShortIndirect,false>,  &STM8::OP_ADD_Mem<Op_ShortIndirect,false>,
+    &STM8::OP_JP_Mem<Op_ShortIndirect,false>,  &STM8::OP_CALL_Mem<Op_ShortIndirect,false>, &STM8::OP_LDW_Ind<Op_ShortIndirect,false>, &STM8::OP_LDW_Mem<Op_ShortIndirect,false>,
 
     // D0
-    &STM8::OP_SUB_Mem<Op_ShortIndirectInd,false>, &STM8::OP_CP_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_SBC_Mem<Op_ShortIndirectInd,false>, &STM8::OP_CPW_Mem<Op_ShortIndirectInd,false>,
-    &STM8::OP_AND_Mem<Op_ShortIndirectInd,false>, &STM8::OP_BCP_Mem<Op_ShortIndirectInd,false>, &STM8::OP_LD_A<Op_ShortIndirectInd,false>,    &STM8::OP_LD_Mem<Op_ShortIndirectInd,false>,
-    &STM8::OP_XOR_Mem<Op_ShortIndirectInd,false>, &STM8::OP_ADC_Mem<Op_ShortIndirectInd,false>, &STM8::OP_OR_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_ADD_Mem<Op_ShortIndirectInd,false>,
-    &STM8::OP_JP_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_UNK,                                &STM8::OP_LDW_Ind<Op_ShortIndirectInd,false>, &STM8::OP_LDW_Mem<Op_ShortIndirectInd,false>,
+    &STM8::OP_SUB_Mem<Op_ShortIndirectInd,false>, &STM8::OP_CP_Mem<Op_ShortIndirectInd,false>,   &STM8::OP_SBC_Mem<Op_ShortIndirectInd,false>, &STM8::OP_CPW_Mem<Op_ShortIndirectInd,false>,
+    &STM8::OP_AND_Mem<Op_ShortIndirectInd,false>, &STM8::OP_BCP_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_LD_A<Op_ShortIndirectInd,false>,    &STM8::OP_LD_Mem<Op_ShortIndirectInd,false>,
+    &STM8::OP_XOR_Mem<Op_ShortIndirectInd,false>, &STM8::OP_ADC_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_OR_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_ADD_Mem<Op_ShortIndirectInd,false>,
+    &STM8::OP_JP_Mem<Op_ShortIndirectInd,false>,  &STM8::OP_CALL_Mem<Op_ShortIndirectInd,false>, &STM8::OP_LDW_Ind<Op_ShortIndirectInd,false>, &STM8::OP_LDW_Mem<Op_ShortIndirectInd,false>,
 
     // E0
     &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK, &STM8::OP_UNK,

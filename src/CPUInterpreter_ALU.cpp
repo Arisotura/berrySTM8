@@ -136,7 +136,6 @@ int STM8::OP_ADDW_Imm()
 template int STM8::OP_ADDW_Imm<false>();
 template int STM8::OP_ADDW_Imm<true>();
 
-
 template<STM8::OperandType op, bool indY>
 int STM8::OP_ADDW_Mem()
 {
@@ -164,7 +163,6 @@ template int STM8::OP_ADDW_Mem<STM8::Op_LongDirect, false>();
 template int STM8::OP_ADDW_Mem<STM8::Op_LongDirect, true>();
 template int STM8::OP_ADDW_Mem<STM8::Op_ShortDirectSP, false>();
 template int STM8::OP_ADDW_Mem<STM8::Op_ShortDirectSP, true>();
-
 
 int STM8::OP_ADDW_SP()
 {
@@ -531,6 +529,23 @@ int STM8::OP_NEG_Mem()
 DeclTemplate(OP_NEG_Mem);
 
 
+template<bool indY>
+int STM8::OP_NEGW()
+{
+    u16 ind = indY ? Y : X;
+
+    ind = -ind;
+    if (indY) Y = ind;
+    else      X = ind;
+    SetNZVC((ind & 0x8000), (!ind), (ind == 0x8000), (!!ind));
+
+    return 2;
+}
+
+template int STM8::OP_NEGW<false>();
+template int STM8::OP_NEGW<true>();
+
+
 int STM8::OP_OR_Imm()
 {
     u8 val = CPUFetch();
@@ -789,6 +804,53 @@ int STM8::OP_SUB_SP()
     SP -= b;
     return 1;
 }
+
+
+template<bool indY>
+int STM8::OP_SUBW_Imm()
+{
+    u16 a = indY ? Y : X;
+    u16 b = (CPUFetch() << 8);
+    b |= CPUFetch();
+
+    u16 val = a - b;
+    if (indY) Y = val;
+    else      X = val;
+    SetFlagsSub(a, b, val, Flag_V|Flag_C|Flag_H);
+
+    return 2;
+}
+
+template int STM8::OP_SUBW_Imm<false>();
+template int STM8::OP_SUBW_Imm<true>();
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_SUBW_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+
+    u16 a, b;
+
+    if (OpIsInd(op))
+        a = indY ? X : Y;
+    else
+        a = indY ? Y : X;
+
+    b = (MemRead(addr) << 8);
+    b |= MemRead(addr+1);
+
+    u16 val = a - b;
+    if (indY) Y = val;
+    else      X = val;
+    SetFlagsSub(a, b, val, Flag_V|Flag_C|Flag_H);
+
+    return OpIsIndirect(op) ? 5 : 2;
+}
+
+template int STM8::OP_SUBW_Mem<STM8::Op_LongDirect, false>();
+template int STM8::OP_SUBW_Mem<STM8::Op_LongDirect, true>();
+template int STM8::OP_SUBW_Mem<STM8::Op_ShortDirectSP, false>();
+template int STM8::OP_SUBW_Mem<STM8::Op_ShortDirectSP, true>();
 
 
 template<bool indY>
