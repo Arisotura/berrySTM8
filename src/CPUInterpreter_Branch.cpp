@@ -82,24 +82,8 @@ u32 call_sp[200];
 int call_level = 0;
 
 
-int STM8::OP_CALL_Imm()
-{
-    u32 dst = (CPUFetch() << 8);
-    dst |= CPUFetch();
-
-    call_pc[call_level] = PC;
-    call_sp[call_level] = SP;
-    call_level++;
-
-    MemWrite(SP--, PC & 0xFF);
-    MemWrite(SP--, (PC >> 8) & 0xFF);
-
-    CPUJumpTo((PC & 0xFF0000) | dst);
-    return 4;
-}
-
 template<STM8::OperandType op, bool indY>
-int STM8::OP_CALL_Mem()
+int STM8::OP_CALL()
 {
     u32 dst = CPUFetchOpAddr<op, indY>();
 
@@ -111,23 +95,39 @@ int STM8::OP_CALL_Mem()
     MemWrite(SP--, (PC >> 8) & 0xFF);
 
     CPUJumpTo((PC & 0xFF0000) | dst);
-    if (OpIsIndirect(op))
-        return 6;
-    else
-        return 4;
+    return OpIsIndirect(op) ? 6 : 4;
 }
 
-template int STM8::OP_CALL_Mem<STM8::Op_Ind,false>();
-template int STM8::OP_CALL_Mem<STM8::Op_Ind,true>();
-template int STM8::OP_CALL_Mem<STM8::Op_ShortDirectInd,false>();
-template int STM8::OP_CALL_Mem<STM8::Op_ShortDirectInd,true>();
-template int STM8::OP_CALL_Mem<STM8::Op_LongDirectInd,false>();
-template int STM8::OP_CALL_Mem<STM8::Op_LongDirectInd,true>();
-template int STM8::OP_CALL_Mem<STM8::Op_ShortIndirect,false>();
-template int STM8::OP_CALL_Mem<STM8::Op_LongIndirect,false>();
-template int STM8::OP_CALL_Mem<STM8::Op_ShortIndirectInd,false>();
-template int STM8::OP_CALL_Mem<STM8::Op_ShortIndirectInd,true>();
-template int STM8::OP_CALL_Mem<STM8::Op_LongIndirectInd,false>();
+template int STM8::OP_CALL<STM8::Op_LongDirect,false>();
+template int STM8::OP_CALL<STM8::Op_Ind,false>();
+template int STM8::OP_CALL<STM8::Op_Ind,true>();
+template int STM8::OP_CALL<STM8::Op_ShortDirectInd,false>();
+template int STM8::OP_CALL<STM8::Op_ShortDirectInd,true>();
+template int STM8::OP_CALL<STM8::Op_LongDirectInd,false>();
+template int STM8::OP_CALL<STM8::Op_LongDirectInd,true>();
+template int STM8::OP_CALL<STM8::Op_ShortIndirect,false>();
+template int STM8::OP_CALL<STM8::Op_LongIndirect,false>();
+template int STM8::OP_CALL<STM8::Op_ShortIndirectInd,false>();
+template int STM8::OP_CALL<STM8::Op_ShortIndirectInd,true>();
+template int STM8::OP_CALL<STM8::Op_LongIndirectInd,false>();
+
+
+
+template<STM8::OperandType op>
+int STM8::OP_CALLF()
+{
+    u32 dst = CPUFetchOpAddr<op>();
+
+    MemWrite(SP--, PC & 0xFF);
+    MemWrite(SP--, (PC >> 8) & 0xFF);
+    MemWrite(SP--, (PC >> 16) & 0xFF);
+
+    CPUJumpTo(dst);
+    return OpIsIndirect(op) ? 8 : 5;
+}
+
+template int STM8::OP_CALLF<STM8::Op_ExtendedDirect>();
+template int STM8::OP_CALLF<STM8::Op_ExtendedIndirect>();
 
 
 int STM8::OP_CALLR()
@@ -175,17 +175,8 @@ int STM8::OP_IRET()
 }
 
 
-int STM8::OP_JP_Imm()
-{
-    u32 dst = (CPUFetch() << 8);
-    dst |= CPUFetch();
-
-    CPUJumpTo((PC & 0xFF0000) | dst);
-    return 1;
-}
-
 template<STM8::OperandType op, bool indY>
-int STM8::OP_JP_Mem()
+int STM8::OP_JP()
 {
     u32 dst = CPUFetchOpAddr<op, indY>();
 
@@ -198,36 +189,31 @@ int STM8::OP_JP_Mem()
         return 1;
 }
 
-template int STM8::OP_JP_Mem<STM8::Op_Ind,false>();
-template int STM8::OP_JP_Mem<STM8::Op_Ind,true>();
-template int STM8::OP_JP_Mem<STM8::Op_ShortDirectInd,false>();
-template int STM8::OP_JP_Mem<STM8::Op_ShortDirectInd,true>();
-template int STM8::OP_JP_Mem<STM8::Op_LongDirectInd,false>();
-template int STM8::OP_JP_Mem<STM8::Op_LongDirectInd,true>();
-template int STM8::OP_JP_Mem<STM8::Op_ShortIndirect,false>();
-template int STM8::OP_JP_Mem<STM8::Op_LongIndirect,false>();
-template int STM8::OP_JP_Mem<STM8::Op_ShortIndirectInd,false>();
-template int STM8::OP_JP_Mem<STM8::Op_ShortIndirectInd,true>();
-template int STM8::OP_JP_Mem<STM8::Op_LongIndirectInd,false>();
+template int STM8::OP_JP<STM8::Op_LongDirect,false>();
+template int STM8::OP_JP<STM8::Op_Ind,false>();
+template int STM8::OP_JP<STM8::Op_Ind,true>();
+template int STM8::OP_JP<STM8::Op_ShortDirectInd,false>();
+template int STM8::OP_JP<STM8::Op_ShortDirectInd,true>();
+template int STM8::OP_JP<STM8::Op_LongDirectInd,false>();
+template int STM8::OP_JP<STM8::Op_LongDirectInd,true>();
+template int STM8::OP_JP<STM8::Op_ShortIndirect,false>();
+template int STM8::OP_JP<STM8::Op_LongIndirect,false>();
+template int STM8::OP_JP<STM8::Op_ShortIndirectInd,false>();
+template int STM8::OP_JP<STM8::Op_ShortIndirectInd,true>();
+template int STM8::OP_JP<STM8::Op_LongIndirectInd,false>();
 
 
-int STM8::OP_JPF_Imm()
+template<STM8::OperandType op>
+int STM8::OP_JPF()
 {
-    u32 dst = (CPUFetch() << 16);
-    dst |= (CPUFetch() << 8);
-    dst |= CPUFetch();
+    u32 dst = CPUFetchOpAddr<op>();
 
     CPUJumpTo(dst);
-    return 2;
+    return OpIsIndirect(op) ? 6 : 2;
 }
 
-int STM8::OP_JPF_Mem()
-{
-    u32 dst = CPUFetchOpAddr<Op_ExtendedIndirect>();
-
-    CPUJumpTo(dst);
-    return 6;
-}
+template int STM8::OP_JPF<STM8::Op_ExtendedDirect>();
+template int STM8::OP_JPF<STM8::Op_ExtendedIndirect>();
 
 
 template<STM8::ConditionCode cond>
@@ -305,4 +291,15 @@ int STM8::OP_RET()
     }
 
     return 4;
+}
+
+
+int STM8::OP_RETF()
+{
+    u16 pc = (MemRead(++SP) << 16);
+    pc |= (MemRead(++SP) << 8);
+    pc |= MemRead(++SP);
+
+    CPUJumpTo(pc);
+    return 5;
 }
