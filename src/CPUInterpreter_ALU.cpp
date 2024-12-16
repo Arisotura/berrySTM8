@@ -493,6 +493,78 @@ template int STM8::OP_DECW<false>();
 template int STM8::OP_DECW<true>();
 
 
+template<bool indY>
+int STM8::OP_DIV()
+{
+    u16 ind = indY ? Y : X;
+
+    if (A)
+    {
+        u16 quo = ind / A;
+        u8 rem = ind % A;
+
+        if (indY) Y = quo;
+        else      X = quo;
+        A = rem;
+
+        CC &= ~(Flag_C|Flag_Z|Flag_N|Flag_H|Flag_V);
+        if (!quo) CC |= Flag_Z;
+
+        // TODO: how does the cycle count work for this?
+        // they say 2-17
+        // is it based on quotient population count?
+        // on the number of leading zeros?
+        // or something else entirely?
+        return 2;
+    }
+    else
+    {
+        // division by zero
+        CC &= ~(Flag_Z|Flag_N|Flag_H|Flag_V);
+        if (!ind) CC |= Flag_Z; // checkme
+        CC |= Flag_C;
+
+        return 2;
+    }
+}
+
+template int STM8::OP_DIV<false>();
+template int STM8::OP_DIV<true>();
+
+
+int STM8::OP_DIVW()
+{
+    if (Y)
+    {
+        u16 quo = X / Y;
+        u16 rem = X % Y;
+
+        X = quo;
+        Y = rem;
+
+        CC &= ~(Flag_C|Flag_Z|Flag_N|Flag_H|Flag_V);
+        if (!quo) CC |= Flag_Z;
+
+        // TODO: how does the cycle count work for this?
+        // they say 2-17
+        // is it based on quotient population count?
+        // on the number of leading zeros?
+        // or something else entirely?
+        return 2;
+    }
+    else
+    {
+        // division by zero
+        // TODO: results are 'indeterminate'??
+        CC &= ~(Flag_Z|Flag_N|Flag_H|Flag_V);
+        if (!X) CC |= Flag_Z; // checkme
+        CC |= Flag_C;
+
+        return 2;
+    }
+}
+
+
 int STM8::OP_EXG_XL()
 {
     u8 tmp = A;
