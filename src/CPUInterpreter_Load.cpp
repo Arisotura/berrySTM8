@@ -93,7 +93,7 @@ int STM8::OP_LD_Mem()
     return OpIsIndirect(op) ? 4 : 1;
 }
 
-DeclTemplateLDW(OP_LD_Mem);
+DeclTemplateLDW(OP_LD_Mem)
 
 
 int STM8::OP_LD_XL_A()
@@ -143,6 +143,46 @@ int STM8::OP_LD_A_YH()
     A = Y >> 8;
     return 1;
 }
+
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_LDF_A()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    A = val;
+    SetNZ((val & 0x80), (!val));
+
+    return OpIsIndirect(op) ? 5 : 1;
+}
+
+template int STM8::OP_LDF_A<STM8::Op_ExtendedDirect,false>();
+template int STM8::OP_LDF_A<STM8::Op_ExtendedDirectInd,false>();
+template int STM8::OP_LDF_A<STM8::Op_ExtendedDirectInd,true>();
+template int STM8::OP_LDF_A<STM8::Op_ExtendedIndirectInd,false>();
+template int STM8::OP_LDF_A<STM8::Op_ExtendedIndirectInd,true>();
+template int STM8::OP_LDF_A<STM8::Op_ExtendedIndirect,false>();
+
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_LDF_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = A;
+
+    MemWrite(addr, val);
+    SetNZ((val & 0x80), (!val));
+
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+template int STM8::OP_LDF_Mem<STM8::Op_ExtendedDirect,false>();
+template int STM8::OP_LDF_Mem<STM8::Op_ExtendedDirectInd,false>();
+template int STM8::OP_LDF_Mem<STM8::Op_ExtendedDirectInd,true>();
+template int STM8::OP_LDF_Mem<STM8::Op_ExtendedIndirectInd,false>();
+template int STM8::OP_LDF_Mem<STM8::Op_ExtendedIndirectInd,true>();
+template int STM8::OP_LDF_Mem<STM8::Op_ExtendedIndirect,false>();
 
 
 template<bool indY>
