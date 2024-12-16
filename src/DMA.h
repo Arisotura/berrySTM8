@@ -23,10 +23,10 @@ class STM8DMA : public STM8Device
 {
 public:
     STM8DMA(STM8* stm, u32 base);
-    ~STM8DMA();
-    void Reset();
+    ~STM8DMA() override;
+    void Reset() override;
 
-    u8 IORead(u32 addr);
+    u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:

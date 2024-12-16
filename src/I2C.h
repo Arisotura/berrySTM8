@@ -23,10 +23,10 @@ class STM8I2C : public STM8Device
 {
 public:
     STM8I2C(STM8* stm, u32 base);
-    ~STM8I2C();
-    void Reset();
+    ~STM8I2C() override;
+    void Reset() override;
 
-    u8 IORead(u32 addr);
+    u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:

@@ -1014,6 +1014,28 @@ template int STM8::OP_SUBW_Mem<STM8::Op_ShortDirectSP, false>();
 template int STM8::OP_SUBW_Mem<STM8::Op_ShortDirectSP, true>();
 
 
+int STM8::OP_SWAP_A()
+{
+    A = (A >> 4) | (A << 4);
+    SetNZ((A & 0x80), (!A));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_SWAP_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    val = (val >> 4) | (val << 4);
+    MemWrite(addr, val);
+    SetNZ((val & 0x80), (!val));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_SWAP_Mem)
+
+
 template<bool indY>
 int STM8::OP_SWAPW()
 {
