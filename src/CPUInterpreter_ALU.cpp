@@ -571,6 +571,58 @@ int STM8::OP_OR_Mem()
 DeclTemplate(OP_OR_Mem)
 
 
+int STM8::OP_RLC_A()
+{
+    u8 val = A;
+
+    A <<= 1;
+    if (CC & Flag_C) A |= 0x01;
+    SetNZC((A & 0x80), (!A), (val & 0x80));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_RLC_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    u8 nval = val << 1;
+    if (CC & Flag_C) nval |= 0x01;
+    MemWrite(addr, nval);
+    SetNZC((nval & 0x80), (!nval), (val & 0x80));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_RLC_Mem)
+
+
+template<bool indY>
+int STM8::OP_RLCW()
+{
+    if (indY)
+    {
+        u16 val = Y;
+
+        Y <<= 1;
+        if (CC & Flag_C) Y |= 0x0001;
+        SetNZC((Y & 0x8000), (!Y), (val & 0x8000));
+    }
+    else
+    {
+        u16 val = X;
+
+        X <<= 1;
+        if (CC & Flag_C) X |= 0x0001;
+        SetNZC((X & 0x8000), (!X), (val & 0x8000));
+    }
+    return 2;
+}
+
+template int STM8::OP_RLCW<false>();
+template int STM8::OP_RLCW<true>();
+
+
 template<bool indY>
 int STM8::OP_RLWA()
 {
@@ -615,6 +667,32 @@ int STM8::OP_RRC_Mem()
 }
 
 DeclTemplate(OP_RRC_Mem)
+
+
+template<bool indY>
+int STM8::OP_RRCW()
+{
+    if (indY)
+    {
+        u16 val = Y;
+
+        Y >>= 1;
+        if (CC & Flag_C) Y |= 0x8000;
+        SetNZC((Y & 0x8000), (!Y), (val & 0x0001));
+    }
+    else
+    {
+        u16 val = X;
+
+        X >>= 1;
+        if (CC & Flag_C) X |= 0x8000;
+        SetNZC((X & 0x8000), (!X), (val & 0x0001));
+    }
+    return 2;
+}
+
+template int STM8::OP_RRCW<false>();
+template int STM8::OP_RRCW<true>();
 
 
 template<bool indY>
@@ -717,6 +795,54 @@ int STM8::OP_SLLW()
 
 template int STM8::OP_SLLW<false>();
 template int STM8::OP_SLLW<true>();
+
+
+int STM8::OP_SRA_A()
+{
+    u8 val = A;
+
+    A = (((s8)A) >> 1);
+    SetNZC((A & 0x80), (!A), (val & 0x01));
+    return 1;
+}
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_SRA_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    u8 nval = (((s8)val) >> 1);
+    MemWrite(addr, nval);
+    SetNZC((nval & 0x80), (!nval), (val & 0x01));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_SRA_Mem)
+
+
+template<bool indY>
+int STM8::OP_SRAW()
+{
+    if (indY)
+    {
+        u16 val = Y;
+
+        Y = (((s16)Y) >> 1);
+        SetNZC((Y & 0x8000), (!Y), (val & 0x0001));
+    }
+    else
+    {
+        u16 val = X;
+
+        X = (((s16)X) >> 1);
+        SetNZC((X & 0x8000), (!X), (val & 0x0001));
+    }
+    return 2;
+}
+
+template int STM8::OP_SRAW<false>();
+template int STM8::OP_SRAW<true>();
 
 
 int STM8::OP_SRL_A()
