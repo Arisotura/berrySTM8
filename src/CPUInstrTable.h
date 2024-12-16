@@ -17,10 +17,13 @@
 */
 
 int OP_UNK();
+int OP_CCF();
 int OP_NOP();
+int OP_RCF();
 int OP_RIM();
 int OP_RVF();
 int OP_SIM();
+int OP_SCF();
 int OP_Prefix72();
 int OP_Prefix90();
 int OP_Prefix91();
@@ -187,12 +190,12 @@ InstrFunc InstrTable[256] =
     &STM8::OP_IRET,   &STM8::OP_RET,          &STM8::OP_INT,     &STM8::OP_UNK,
     &STM8::OP_POP_A,  &STM8::OP_POPW<false>,  &STM8::OP_POP_CC,  &STM8::OP_UNK,
     &STM8::OP_PUSH_A, &STM8::OP_PUSHW<false>, &STM8::OP_PUSH_CC, &STM8::OP_UNK,
-    &STM8::OP_UNK,    &STM8::OP_UNK,          &STM8::OP_UNK,     &STM8::OP_UNK,
+    &STM8::OP_CCF,    &STM8::OP_UNK,          &STM8::OP_UNK,     &STM8::OP_UNK,
 
     // 90
     &STM8::OP_Prefix90, &STM8::OP_Prefix91, &STM8::OP_Prefix92, &STM8::OP_LDW_X_Y,
     &STM8::OP_LDW_SP_X, &STM8::OP_LD_XH_A,  &STM8::OP_LDW_X_SP, &STM8::OP_LD_XL_A,
-    &STM8::OP_UNK,      &STM8::OP_UNK,      &STM8::OP_RIM,      &STM8::OP_SIM,
+    &STM8::OP_RCF,      &STM8::OP_SCF,      &STM8::OP_RIM,      &STM8::OP_SIM,
     &STM8::OP_RVF,      &STM8::OP_NOP,      &STM8::OP_LD_A_XH,  &STM8::OP_LD_A_XL,
 
     // A0

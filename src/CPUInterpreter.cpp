@@ -30,8 +30,22 @@ int STM8::OP_UNK()
 }
 
 
+int STM8::OP_CCF()
+{
+    CC ^= Flag_C;
+    return 1;
+}
+
+
 int STM8::OP_NOP()
 {
+    return 1;
+}
+
+
+int STM8::OP_RCF()
+{
+    CC &= ~Flag_C;
     return 1;
 }
 
@@ -44,17 +58,24 @@ int STM8::OP_RIM()
 }
 
 
-int STM8::OP_SIM()
+int STM8::OP_RVF()
 {
-    SetI(true, true);
-    UpdateIRQ();
+    CC &= ~Flag_V;
     return 1;
 }
 
 
-int STM8::OP_RVF()
+int STM8::OP_SCF()
 {
-    CC &= ~Flag_V;
+    CC |= Flag_C;
+    return 1;
+}
+
+
+int STM8::OP_SIM()
+{
+    SetI(true, true);
+    UpdateIRQ();
     return 1;
 }
 
