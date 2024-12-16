@@ -448,6 +448,41 @@ template int STM8::OP_DECW<false>();
 template int STM8::OP_DECW<true>();
 
 
+int STM8::OP_EXG_XL()
+{
+    u8 tmp = A;
+    A = X & 0xFF;
+    X = (X & 0xFF00) | tmp;
+    return 1;
+}
+
+int STM8::OP_EXG_YL()
+{
+    u8 tmp = A;
+    A = Y & 0xFF;
+    Y = (Y & 0xFF00) | tmp;
+    return 1;
+}
+
+int STM8::OP_EXG_Mem()
+{
+    u32 addr = CPUFetchOpAddr<Op_LongDirect>();
+    u8 tmp = A;
+    A = MemRead(addr);
+    MemWrite(addr, tmp);
+    return 3;
+}
+
+
+int STM8::OP_EXGW()
+{
+    u16 tmp = X;
+    X = Y;
+    Y = tmp;
+    return 1;
+}
+
+
 int STM8::OP_INC_A()
 {
     u8 val = A;
