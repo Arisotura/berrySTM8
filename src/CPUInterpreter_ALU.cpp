@@ -173,9 +173,21 @@ int STM8::OP_BCP_Imm()
 
     val = A & val;
     SetNZ((val & 0x80), (!val));
-
     return 1;
 }
+
+template<STM8::OperandType op, bool indY>
+int STM8::OP_BCP_Mem()
+{
+    u32 addr = CPUFetchOpAddr<op, indY>();
+    u8 val = MemRead(addr);
+
+    val = A & val;
+    SetNZ((val & 0x80), (!val));
+    return OpIsIndirect(op) ? 4 : 1;
+}
+
+DeclTemplate(OP_BCP_Mem)
 
 
 template<int bit>
