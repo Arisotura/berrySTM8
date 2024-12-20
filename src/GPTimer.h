@@ -31,15 +31,18 @@ public:
     void Run(int cycles);
 
     void UpdateEvent();
+    void TriggerIRQ();
 
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:
     u8 Num;
+    u8 IntNum;
 
     u8 Cnt[2];
     u8 Status[2];
+    u8 IntEnable;
 
     u16 Counter;
     u16 ReloadVal;

@@ -290,7 +290,7 @@ int STM8::CPUExecute(int cycles)
         _lastop = op; // debug
         int cy = (this->*InstrTable[op])();
 
-        printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+        //printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
 
         // this will do the job for most cases
         // instructions are supposed to have decode cycles and execute cycles, but

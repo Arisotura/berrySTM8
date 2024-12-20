@@ -25,6 +25,13 @@
 STM8GPTimer::STM8GPTimer(STM8* stm, u32 iobase, u8 num) : STM8Device(stm, iobase), Num(num)
 {
     MapIORange(0x00, 0x16);
+
+    switch (Num)
+    {
+    case 2: IntNum = 19; break;
+    case 3: IntNum = 21; break;
+    case 5: IntNum = 27; break;
+    }
 }
 
 STM8GPTimer::~STM8GPTimer()
@@ -37,6 +44,7 @@ void STM8GPTimer::Reset()
     Cnt[1] = 0;
     Status[0] = 0;
     Status[1] = 0;
+    IntEnable = 0;
 
     Counter = 0;
     ReloadVal = 0xFFFF;
@@ -61,7 +69,6 @@ void STM8GPTimer::Run(int cycles)
     {
         PreCount = 0;
 
-        if(Num==5)printf("TIM%d TICK  %04X %04X %02X\n", Num, Counter, ReloadVal, Cnt[0]);
         if (Cnt[0] & (1<<4))
         {
             // count down
@@ -93,6 +100,14 @@ void STM8GPTimer::UpdateEvent()
         Counter = ReloadVal;
     else
         Counter = 0;
+
+    if (IntEnable & (1<<0))
+        TriggerIRQ();
+}
+
+void STM8GPTimer::TriggerIRQ()
+{
+    STM->TriggerIRQ(IntNum);
 }
 
 
@@ -103,6 +118,7 @@ u8 STM8GPTimer::IORead(u32 addr)
     {
     case 0x00: printf("read cnt, %02X\n", Cnt[0]);return Cnt[0];
     case 0x01: return Cnt[1];
+    case 0x05: return IntEnable;
     case 0x06: return Status[0];
     case 0x07: return Status[1];
     case 0x0E: return PrescalerReg;
@@ -125,6 +141,10 @@ void STM8GPTimer::IOWrite(u32 addr, u8 val)
     case 0x01:
         Cnt[1] = val & 0xF8;
         if (val) printf("TIM%d: UNSUPPORTED CNT2 %02X\n", Num, val);
+        return;
+
+    case 0x05:
+        IntEnable = val & 0xC7;
         return;
 
     case 0x06:
