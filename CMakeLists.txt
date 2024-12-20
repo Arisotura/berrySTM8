@@ -15,6 +15,7 @@ add_executable(berrySTM8
         src/CPUInterpreter_Load.cpp
         src/CPUInterpreter_ALU.cpp
         src/DMA.cpp
-        src/I2C.cpp)
+        src/I2C.cpp
+        src/GPTimer.cpp)
 
 target_link_libraries(berrySTM8 ${SDL2_LIBRARIES})

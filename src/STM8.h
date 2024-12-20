@@ -253,6 +253,10 @@ private:
     STM8DMA* DMA;
     STM8I2C* I2C;
 
+    STM8GPTimer* TIM2;
+    STM8GPTimer* TIM3;
+    STM8GPTimer* TIM5;
+
     STM8Device* IORegisters[0x800];
 
     // ---- FLASH registers ---------------------

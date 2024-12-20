@@ -22,6 +22,7 @@
 #include "STM8.h"
 #include "DMA.h"
 #include "I2C.h"
+#include "GPTimer.h"
 
 
 STM8::STM8()
@@ -52,10 +53,18 @@ STM8::STM8()
 
     DMA = new STM8DMA(this, 0x5070);
     I2C = new STM8I2C(this, 0x5210);
+
+    TIM2 = new STM8GPTimer(this, 0x5250, 2);
+    TIM3 = new STM8GPTimer(this, 0x5280, 3);
+    TIM5 = new STM8GPTimer(this, 0x5300, 5);
 }
 
 STM8::~STM8()
 {
+    delete TIM2;
+    delete TIM3;
+    delete TIM5;
+
     delete I2C;
     delete DMA;
 }
@@ -76,6 +85,10 @@ void STM8::Reset()
 
     DMA->Reset();
     I2C->Reset();
+
+    TIM2->Reset();
+    TIM3->Reset();
+    TIM5->Reset();
 }
 
 
@@ -116,6 +129,9 @@ void STM8::CPUReset()
 void STM8::CPUJumpTo(u32 addr)
 {
     //printf("branch %06X -> %06X\n", PC, addr);
+    if (addr==0xBEFB) printf("fart %08X\n", PC);
+    if (addr==0xBC2C) printf("i2cwrite %08X\n", PC);
+    if (addr==0xBFAF) printf("BFAF! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
 }
 
@@ -337,7 +353,7 @@ u8 STM8::MemRead(u32 addr)
 {
     if (addr < RAMSize)
     {
-        printf("STM8: RAM read %04X %02X\n", addr, RAM[addr]);
+        //printf("STM8: RAM read %04X %02X\n", addr, RAM[addr]);
         return RAM[addr];
     }
     else if ((addr >= EEPROMStart) && (addr < EEPROMEnd))
@@ -375,7 +391,7 @@ void STM8::MemWrite(u32 addr, u8 val)
 {
     if (addr < RAMSize)
     {
-        printf("STM8: RAM write %04X %02X\n", addr, val);
+        //printf("STM8: RAM write %04X %02X\n", addr, val);
         RAM[addr] = val;
         return;
     }
