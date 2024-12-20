@@ -28,11 +28,26 @@ public:
     ~STM8GPTimer() override;
     void Reset() override;
 
+    void Run(int cycles);
+
+    void UpdateEvent();
+
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:
     u8 Num;
+
+    u8 Cnt[2];
+    u8 Status[2];
+
+    u16 Counter;
+    u16 ReloadVal;
+
+    u8 PrescalerReg;
+    u8 Prescaler;
+
+    u8 PreCount;
 };
 
 #endif // GPTIMER_H

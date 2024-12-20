@@ -33,21 +33,135 @@ STM8GPTimer::~STM8GPTimer()
 
 void STM8GPTimer::Reset()
 {
-    //
+    Cnt[0] = 0;
+    Cnt[1] = 0;
+    Status[0] = 0;
+    Status[1] = 0;
+
+    Counter = 0;
+    ReloadVal = 0xFFFF;
+
+    PrescalerReg = 0;
+    Prescaler = 2;
+
+    PreCount = 0;
+}
+
+
+void STM8GPTimer::Run(int cycles)
+{
+    if (!(Cnt[0] & (1<<0)))
+    {
+        // not running
+        return;
+    }
+
+    PreCount++;
+    if (PreCount >= Prescaler)
+    {
+        PreCount = 0;
+
+        if(Num==5)printf("TIM%d TICK  %04X %04X %02X\n", Num, Counter, ReloadVal, Cnt[0]);
+        if (Cnt[0] & (1<<4))
+        {
+            // count down
+
+            if (Counter == 0)
+                UpdateEvent();
+            else
+                Counter--;
+        }
+        else
+        {
+            // count up
+
+            if (Counter == ReloadVal)
+                UpdateEvent();
+            else
+                Counter++;
+        }
+    }
+}
+
+void STM8GPTimer::UpdateEvent()
+{
+    printf("TIM%d UPDATE\n", Num);
+    Status[0] |= (1<<0);
+    PreCount = 0;
+
+    if (Cnt[0] & (1<<4))
+        Counter = ReloadVal;
+    else
+        Counter = 0;
 }
 
 
 u8 STM8GPTimer::IORead(u32 addr)
 {
     addr -= IOBase;
+    switch (addr)
+    {
+    case 0x00: printf("read cnt, %02X\n", Cnt[0]);return Cnt[0];
+    case 0x01: return Cnt[1];
+    case 0x06: return Status[0];
+    case 0x07: return Status[1];
+    case 0x0E: return PrescalerReg;
+    }
 
-    printf("TIM%d: unknown read %06X\n", Num, IOBase+addr);
+    printf("TIM%d: unknown read %06X  %06X\n", Num, IOBase+addr, STM->GetPC());
     return 0;
 }
 
 void STM8GPTimer::IOWrite(u32 addr, u8 val)
 {
     addr -= IOBase;
+    switch (addr)
+    {
+    case 0x00:
+        Cnt[0] = val;
+        printf("%06X TIM%d CNT=%02X\n", STM->GetPC(), Num, val);
+        if (val & 0xFE) printf("TIM%d: UNSUPPORTED CNT1 %02X\n", Num, val);
+        return;
+    case 0x01:
+        Cnt[1] = val & 0xF8;
+        if (val) printf("TIM%d: UNSUPPORTED CNT2 %02X\n", Num, val);
+        return;
+
+    case 0x06:
+        Status[0] &= val;
+        return;
+    case 0x07:
+        Status[1] &= val;
+        return;
+
+    case 0x08:
+        if (val & (1<<0))
+        {
+            if ((Cnt[0] & 0x06) == 0x00) // URS and UDIS = 0
+                UpdateEvent();
+        }
+        if (val & 0xFE) printf("TIM%d: EVENT GEN %02X\n", Num, val);
+        return;
+
+    case 0x0C:
+        Counter = (Counter & 0x00FF) | (val << 8);
+        return;
+    case 0x0D:
+        Counter = (Counter & 0xFF00) | val;
+        return;
+
+    case 0x0E:
+        PrescalerReg = val & 0x07;
+        Prescaler = 1 << PrescalerReg;
+        return;
+
+    case 0x0F:
+        ReloadVal = (ReloadVal & 0x00FF) | (val << 8);
+        return;
+    case 0x10:
+        ReloadVal = (ReloadVal & 0xFF00) | val;
+        return;
+    }
 
     printf("TIM%d: unknown write %06X %02X\n", Num, IOBase+addr, val);
 }

@@ -37,10 +37,14 @@ public:
     u8 CPUFetch();
     int CPUExecute(int cycles);
 
+    void RunDevices(int cycles);
+
     void TriggerIRQ(int irq);
 
     u8 MemRead(u32 addr);
     void MemWrite(u32 addr, u8 val);
+
+    u32 GetPC() { return PC; }
 
 private:
     // TODO: some kind of model ID?
@@ -258,6 +262,10 @@ private:
     STM8GPTimer* TIM5;
 
     STM8Device* IORegisters[0x800];
+
+    // ---- clock -------------------------------
+
+    u8 ClkEnable[3];
 
     // ---- FLASH registers ---------------------
 

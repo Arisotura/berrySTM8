@@ -83,6 +83,10 @@ void STM8::Reset()
     FLASH_DUKR = 0;
     FLASH_IAPSR = 0x40;
 
+    ClkEnable[0] = 0x00;
+    ClkEnable[1] = 0x80;
+    ClkEnable[2] = 0x00;
+
     DMA->Reset();
     I2C->Reset();
 
@@ -286,12 +290,14 @@ int STM8::CPUExecute(int cycles)
         _lastop = op; // debug
         int cy = (this->*InstrTable[op])();
 
-        //printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+        printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
 
         // this will do the job for most cases
         // instructions are supposed to have decode cycles and execute cycles, but
         // the documentation isn't complete
         count += cy;//(cy - 1);
+
+        RunDevices(cy);
 
         if (NextIRQ != -1)
         {
@@ -301,6 +307,14 @@ int STM8::CPUExecute(int cycles)
     }
 
     return count;
+}
+
+
+void STM8::RunDevices(int cycles)
+{
+    if (ClkEnable[0] & (1<<0)) TIM2->Run(cycles);
+    if (ClkEnable[0] & (1<<1)) TIM3->Run(cycles);
+    if (ClkEnable[2] & (1<<1)) TIM5->Run(cycles);
 }
 
 
@@ -483,6 +497,9 @@ u8 STM8::IORead(u32 addr)
     switch (addr)
     {
     case 0x5054: return FLASH_IAPSR;
+    case 0x50C3: return ClkEnable[0];
+    case 0x50C4: return ClkEnable[1];
+    case 0x50D0: return ClkEnable[2];
     case 0x514C: return 4;
     case 0x53C3: return 3; // HACK
     }
@@ -497,6 +514,8 @@ void STM8::IOWrite(u32 addr, u8 val)
     if (dev)
         return dev->IOWrite(addr, val);
 
+    // TODO: move these to their own devices
+    // or atleast don't hardcode the addresses
     switch (addr)
     {
     case 0x5052:
@@ -530,6 +549,10 @@ void STM8::IOWrite(u32 addr, u8 val)
             FLASH_PUKR = 0;
         }
         return;
+
+    case 0x50C3: ClkEnable[0] = val; return;
+    case 0x50C4: ClkEnable[1] = val; return;
+    case 0x50D0: ClkEnable[2] = val; return;
     }
 
     printf("STM8: unknown IO write %06X %02X\n", addr, val);
