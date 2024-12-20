@@ -35,5 +35,6 @@ class STM8Device;
 class STM8DMA;
 class STM8I2C;
 class STM8GPTimer;
+class STM8BasicTimer;
 
 #endif // TYPES_H

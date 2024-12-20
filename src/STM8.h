@@ -259,6 +259,7 @@ private:
 
     STM8GPTimer* TIM2;
     STM8GPTimer* TIM3;
+    STM8BasicTimer* TIM4;
     STM8GPTimer* TIM5;
 
     STM8Device* IORegisters[0x800];

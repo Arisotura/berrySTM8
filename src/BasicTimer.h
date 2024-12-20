@@ -16,38 +16,41 @@
     with berrySTM8. If not, see http://www.gnu.org/licenses/.
 */
 
-#ifndef I2C_H
-#define I2C_H
+#ifndef BASICTIMER_H
+#define BASICTIMER_H
 
-class STM8I2C : public STM8Device
+#include "types.h"
+
+class STM8BasicTimer : public STM8Device
 {
 public:
-    STM8I2C(STM8* stm, u32 base);
-    ~STM8I2C() override;
+    STM8BasicTimer(STM8* stm, u32 iobase, u8 num);
+    ~STM8BasicTimer() override;
     void Reset() override;
+
+    void Run(int cycles);
+
+    void UpdateEvent();
+    void TriggerIRQ();
 
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:
+    u8 Num;
+    u8 IntNum;
+
     u8 Cnt[2];
-    u8 Freq;
-    u8 OwnAddr[3];
-    u8 Data;
-    u8 Status[3];
-    u8 IntCnt;
-    u16 ClockCnt;
-    u8 TRISE;
-    u8 PEC;
+    u8 Status;
+    u8 IntEnable;
 
-    bool SendingAddr;
+    u8 Counter;
+    u8 ReloadVal;
 
-    void SetCnt0(u8 val);
-    void SetCnt1(u8 val);
-    void SendData(u8 val);
-    u8 ReceiveData();
+    u8 PrescalerReg;
+    u16 Prescaler;
 
-    void TriggerIRQ();
+    u16 PreCount;
 };
 
-#endif // I2C_H
+#endif // BASICTIMER_H

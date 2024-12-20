@@ -46,6 +46,8 @@ void STM8I2C::Reset()
     ClockCnt = 0x000B;
     TRISE = 0x02;
     PEC = 0;
+
+    SendingAddr = false;
 }
 
 
@@ -60,7 +62,7 @@ u8 STM8I2C::IORead(u32 addr)
     case 0x03: return OwnAddr[0];
     case 0x04: return OwnAddr[1];
     case 0x05: return OwnAddr[2];
-    case 0x06: return Data; // TODO handle underrun/etc
+    case 0x06: return ReceiveData();
     case 0x07: return Status[0];
     case 0x08: return Status[1];
     case 0x09: Status[0] &= ~(1<<1); return Status[2];
@@ -97,7 +99,7 @@ void STM8I2C::SetCnt0(u8 val)
     Cnt[0] = val & 0xFB;
     // TODO most of the effects (PE bit etc)
 }
-bool first = false;
+
 void STM8I2C::SetCnt1(u8 val)
 {
     printf("I2C: CNT1=%02X\n", val);
@@ -107,7 +109,7 @@ void STM8I2C::SetCnt1(u8 val)
     if (Cnt[1] & (1<<0))
     {
         printf("I2C: START\n");
-        first = true;
+        SendingAddr = true;
         Cnt[1] &= ~(1<<0);
         Status[0] |= (1<<0); // signal start condition
         TriggerIRQ();
@@ -116,6 +118,7 @@ void STM8I2C::SetCnt1(u8 val)
     {
         printf("I2C: STOP\n");
         Cnt[1] &= ~(1<<1);
+        Status[2] &= ~(1<<2); // TX/RX bit
         //TriggerIRQ();
     }
 }
@@ -128,9 +131,30 @@ void STM8I2C::SendData(u8 val)
 
     Status[0] |= (1<<7); // TX empty
     Status[0] |= (1<<2); // byte transfer finished (ACK)
-    if (first) Status[0] |= (1<<1); // address sent
-    first = false;
+    if (SendingAddr)
+    {
+        Status[0] |= (1<<1); // address sent
+        if (val & (1<<0))
+        {
+            // reading
+            Data = 0x20; // TODO get data from an actual device
+            Status[0] |= (1<<6); // RX not empty
+            Status[2] &= ~(1<<2); // RX
+        }
+        else
+        {
+            // writing
+            Status[2] |= (1<<2); // TX
+        }
+    }
+    SendingAddr = false;
     TriggerIRQ();
+}
+
+u8 STM8I2C::ReceiveData()
+{
+    printf("I2C: DATA READ\n");
+    return Data;
 }
 
 

@@ -33,13 +33,13 @@ int main()
 
     STM8* stm = new STM8();
 
-    if (!stm->LoadImage(0, "eeprom.bin"))
+    /*if (!stm->LoadImage(0, "eeprom.bin"))
     {
         printf("failed to load EEPROM\n");
         delete stm;
         SDL_Quit();
         return -1;
-    }
+    }*/
     if (!stm->LoadImage(1, "flash.bin"))
     {
         printf("failed to load FLASH\n");

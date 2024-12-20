@@ -23,6 +23,7 @@
 #include "DMA.h"
 #include "I2C.h"
 #include "GPTimer.h"
+#include "BasicTimer.h"
 
 
 STM8::STM8()
@@ -56,6 +57,7 @@ STM8::STM8()
 
     TIM2 = new STM8GPTimer(this, 0x5250, 2);
     TIM3 = new STM8GPTimer(this, 0x5280, 3);
+    TIM4 = new STM8BasicTimer(this, 0x52E0, 4);
     TIM5 = new STM8GPTimer(this, 0x5300, 5);
 }
 
@@ -63,6 +65,7 @@ STM8::~STM8()
 {
     delete TIM2;
     delete TIM3;
+    delete TIM4;
     delete TIM5;
 
     delete I2C;
@@ -92,6 +95,7 @@ void STM8::Reset()
 
     TIM2->Reset();
     TIM3->Reset();
+    TIM4->Reset();
     TIM5->Reset();
 }
 
@@ -314,6 +318,7 @@ void STM8::RunDevices(int cycles)
 {
     if (ClkEnable[0] & (1<<0)) TIM2->Run(cycles);
     if (ClkEnable[0] & (1<<1)) TIM3->Run(cycles);
+    if (ClkEnable[0] & (1<<2)) TIM4->Run(cycles);
     if (ClkEnable[2] & (1<<1)) TIM5->Run(cycles);
 }
 
@@ -504,7 +509,7 @@ u8 STM8::IORead(u32 addr)
     case 0x53C3: return 3; // HACK
     }
 
-    printf("STM8: unknown IO read %06X\n", addr);
+    printf("STM8: unknown IO read %06X  @ %06X\n", addr, PC);
     return 0;
 }
 
@@ -555,5 +560,5 @@ void STM8::IOWrite(u32 addr, u8 val)
     case 0x50D0: ClkEnable[2] = val; return;
     }
 
-    printf("STM8: unknown IO write %06X %02X\n", addr, val);
+    printf("STM8: unknown IO write %06X %02X  @ %06X\n", addr, val, PC);
 }
