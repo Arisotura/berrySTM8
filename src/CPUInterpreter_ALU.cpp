@@ -400,8 +400,8 @@ int STM8::OP_CPLW()
     u16 ind = indY ? Y : X;
 
     u16 val = ~ind;
-    if (indY) Y = ind;
-    else      X = ind;
+    if (indY) Y = val;
+    else      X = val;
     SetNZC((val & 0x8000), (!val), true);
 
     return 2;
