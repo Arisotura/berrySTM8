@@ -26,6 +26,8 @@ public:
     ~STM8I2C() override;
     void Reset() override;
 
+    void Run(int cycles);
+
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
@@ -33,14 +35,27 @@ private:
     u8 Cnt[2];
     u8 Freq;
     u8 OwnAddr[3];
-    u8 Data;
+    u8 TXData, RXData;
+    bool TXEmpty, RXEmpty;
     u8 Status[3];
     u8 IntCnt;
     u16 ClockCnt;
     u8 TRISE;
     u8 PEC;
 
-    bool SendingAddr;
+    u16 CycleLen;
+    u16 CycleCount;
+    //bool SendingAddr;
+    int State;
+    int StateDuration;
+
+    u8 CurAddr;
+    u8 CurTXData;
+    u8 CurRXData;
+
+    bool AckCurByte, AckNextByte;
+
+    void UpdateState();
 
     void SetCnt0(u8 val);
     void SetCnt1(u8 val);

@@ -140,6 +140,8 @@ void STM8::CPUJumpTo(u32 addr)
     if (addr==0xBEFB) printf("fart %08X\n", PC);
     if (addr==0xBC2C) printf("i2cwrite %08X\n", PC);
     if (addr==0xBFAF) printf("BFAF! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    if (addr==0xBC2C) printf("I2C WRITE! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    if (addr==0xBC72) printf("I2C READ! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
 }
 
@@ -316,6 +318,7 @@ int STM8::CPUExecute(int cycles)
 
 void STM8::RunDevices(int cycles)
 {
+    if (ClkEnable[0] & (1<<3)) I2C->Run(cycles);
     if (ClkEnable[0] & (1<<0)) TIM2->Run(cycles);
     if (ClkEnable[0] & (1<<1)) TIM3->Run(cycles);
     if (ClkEnable[0] & (1<<2)) TIM4->Run(cycles);

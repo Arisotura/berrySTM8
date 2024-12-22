@@ -96,7 +96,7 @@ u8 STM8BasicTimer::IORead(u32 addr)
     addr -= IOBase;
     switch (addr)
     {
-    case 0x00: printf("read cnt, %02X\n", Cnt[0]);return Cnt[0];
+    case 0x00: return Cnt[0];
     case 0x01: return Cnt[1];
     case 0x04: return IntEnable;
     case 0x05: return Status;

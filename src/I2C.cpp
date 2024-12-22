@@ -38,7 +38,10 @@ void STM8I2C::Reset()
     OwnAddr[0] = 0;
     OwnAddr[1] = 0;
     OwnAddr[2] = 0;
-    Data = 0;
+    TXData = 0;
+    RXData = 0;
+    TXEmpty = true;
+    RXEmpty = true;
     Status[0] = 0;
     Status[1] = 0;
     Status[2] = 0;
@@ -47,12 +50,229 @@ void STM8I2C::Reset()
     TRISE = 0x02;
     PEC = 0;
 
-    SendingAddr = false;
+    // TODO make customizable with the registers and shit
+    CycleLen = 15*3;
+    CycleCount = 0;
+
+    //SendingAddr = false;
+    State = 0;
+    StateDuration = 0;
+
+    CurAddr = 0;
+    CurTXData = 0;
+    CurRXData = 0;
+    AckCurByte = false;
+    AckNextByte = false;
+}
+
+
+void STM8I2C::Run(int cycles)
+{
+    CycleCount += cycles;
+    while (CycleCount >= CycleLen)
+    {
+        CycleCount -= CycleLen;
+
+        if (State == 0) continue;
+        if (StateDuration <= 0) continue;
+
+        StateDuration--;
+        if (StateDuration > 0) continue;
+
+        if (State == 1)
+        {
+            // sent start bit
+
+            Cnt[1] &= ~(1<<0);
+            Status[0] |= (1<<0); // signal start condition
+            Status[0] &= ~(1<<7);
+            Status[2] &= ~(1<<1);
+            if (IntCnt & (1<<1))
+                TriggerIRQ();
+            printf("I2C: START\n");
+        }
+        else if (State == 2)
+        {
+            // sent address byte
+
+            AckCurByte = true;
+
+            // set TRA bit based on address bit0 (direction)
+            if (CurAddr & (1<<0))
+                Status[2] &= ~(1<<2);
+            else
+                Status[2] |= (1<<2);
+
+            Status[0] |= (1<<1); // address sent
+            //Status[0] |= (1<<2); // request new data byte
+            Status[2] &= ~(1<<1);
+            if (IntCnt & (1<<1))
+                TriggerIRQ();
+            printf("I2C: sent address\n");
+        }
+        else if (State == 3)
+        {
+            // sent data byte
+
+            if (!TXEmpty)
+            {
+                // we have another byte to send
+                TXEmpty = true;
+                Status[0] |= (1<<7); // TX empty
+                if ((IntCnt & 0x06) == 0x06)
+                    TriggerIRQ();
+            }
+            else
+            {
+                // we ran out of data to send, request more
+                Status[0] |= (1<<2); // BTF
+                Status[2] &= ~(1<<1);
+                if (IntCnt & (1<<1))
+                    TriggerIRQ();
+            }
+            printf("I2C: sent data (%02X), TXEmpty=%d\n", CurTXData, TXEmpty);
+        }
+        else if (State == 4)
+        {
+            // received data byte
+
+            bool zz = RXEmpty;
+            if (RXEmpty)
+            {
+                // we have room for the last received byte
+                RXData = CurRXData;
+                RXEmpty = false;
+                Status[0] |= (1<<6); // RX not empty
+                Status[2] &= ~(1<<1);
+                if ((IntCnt & 0x06) == 0x06)
+                    TriggerIRQ();
+            }
+            else
+            {
+                // the previous byte has not been read
+                Status[0] |= (1<<2); // BTF
+                Status[2] &= ~(1<<1);
+                if (IntCnt & (1<<1))
+                    TriggerIRQ();
+            }
+            printf("I2C: received data (%02X), RXEmpty=%d(%d), IntCnt=%02X\n", RXData, RXEmpty, zz, IntCnt);
+        }
+        else if (State == 5)
+        {
+            // sent stop bit
+
+            Cnt[1] &= ~(1<<1);
+            Status[2] &= ~(1<<2); // TX/RX bit
+            Status[2] &= ~(1<<1);
+            printf("I2C: STOP\n");
+        }
+
+        UpdateState();
+    }
+}
+
+void STM8I2C::UpdateState()
+{
+    if (Status[2] & (1<<1))
+        return;
+
+    if (Cnt[1] & (1<<0))
+    {
+        // start
+        State = 1;
+        StateDuration = 1;
+        Status[2] |= (1<<1); // busy
+
+        printf("UpdateState: START\n");
+    }
+    else if (Cnt[1] & (1<<1))
+    {
+        // stop
+        State = 5;
+        StateDuration = 1;
+        Status[2] |= (1<<1); // busy
+
+        printf("UpdateState: STOP\n");
+    }
+    else if ((State == 1) && (!TXEmpty))
+    {
+        // sending out address byte
+        State = 2;
+        StateDuration = 9; // 8 data bits + ack
+        Status[0] |= (1<<7); // TX empty
+        Status[2] |= (1<<1); // busy
+
+        CurAddr = TXData;
+        TXEmpty = true;
+        printf("UpdateState: SEND ADDR\n");
+    }
+    else if (State == 2)
+    {
+        if (Status[2] & (1<<2))
+            State = 3;
+        else
+            State = 4;
+    }
+    else if (State == 5)
+    {
+        State = 0;
+    }
+
+    // when a byte is sent:
+    // * set TXE bit
+    // * if there's no new byte available: set BTF
+
+    if ((State == 3) && (!TXEmpty))
+    {
+        // sending out data byte
+        State = 3;
+        StateDuration = 9;
+        Status[0] |= (1<<7); // TX empty
+        Status[2] |= (1<<1); // busy
+
+        // TODO: send data to device here
+        CurTXData = TXData;
+        TXEmpty = true;
+        printf("UpdateState: SEND BYTE\n");
+        TriggerIRQ();
+    }
+    else if ((State == 4) )//&& RXEmpty)
+    {
+        bool ack;
+        if (Cnt[1] & (1<<3))
+        {
+            ack = AckCurByte;
+            AckCurByte = AckNextByte;
+            AckNextByte = (Cnt[1] & (1<<2));
+        }
+        else
+            ack = (Cnt[1] & (1<<2));
+
+        if (ack)
+        {
+            // receiving data byte
+            State = 4;
+            StateDuration = 9;
+            Status[2] |= (1<<1); // busy
+
+            // TODO: receive data from device here
+            CurRXData = 0x20;
+            printf("UpdateState: RECV BYTE\n");
+        }
+        else
+        {
+            /*State = 5;
+            StateDuration = 1; // checkme
+            Status[2] |= (1<<1); // busy*/
+
+            printf("UpdateState: RECV STOP\n");
+        }
+    }
 }
 
 
 u8 STM8I2C::IORead(u32 addr)
-{
+{printf("I2C: READ %06X    %06X\n", addr, STM->GetPC());
     addr -= IOBase;
     switch (addr)
     {
@@ -78,7 +298,7 @@ u8 STM8I2C::IORead(u32 addr)
 }
 
 void STM8I2C::IOWrite(u32 addr, u8 val)
-{
+{printf("I2C: WRITE %06X %02X     %06X\n", addr, val, STM->GetPC());
     addr -= IOBase;
     switch (addr)
     {
@@ -86,6 +306,8 @@ void STM8I2C::IOWrite(u32 addr, u8 val)
     case 0x01: SetCnt1(val); return;
 
     case 0x06: SendData(val); return;
+
+    case 0x0A: IntCnt = val & 0x1F; return;
     }
 
     printf("I2C: unknown write %04X %02X\n", addr+IOBase, val);
@@ -102,59 +324,35 @@ void STM8I2C::SetCnt0(u8 val)
 
 void STM8I2C::SetCnt1(u8 val)
 {
-    printf("I2C: CNT1=%02X\n", val);
+    printf("I2C: CNT1=%02X  %06X\n", val, STM->GetPC());
 
     Cnt[1] = val & 0xBF;
 
-    if (Cnt[1] & (1<<0))
-    {
-        printf("I2C: START\n");
-        SendingAddr = true;
-        Cnt[1] &= ~(1<<0);
-        Status[0] |= (1<<0); // signal start condition
-        TriggerIRQ();
-    }
-    if (Cnt[1] & (1<<1))
-    {
-        printf("I2C: STOP\n");
-        Cnt[1] &= ~(1<<1);
-        Status[2] &= ~(1<<2); // TX/RX bit
-        //TriggerIRQ();
-    }
+    if (Cnt[1] & (1<<3))
+        AckNextByte = (Cnt[1] & (1<<2));
+
+    UpdateState();
 }
 
 void STM8I2C::SendData(u8 val)
 {
-    printf("I2C: SEND %02X\n", val);
-
+    printf("I2C: SEND %02X  %06X\n", val, STM->GetPC());
     Status[0] &= ~0xCD; // clear status bits
 
-    Status[0] |= (1<<7); // TX empty
-    Status[0] |= (1<<2); // byte transfer finished (ACK)
-    if (SendingAddr)
-    {
-        Status[0] |= (1<<1); // address sent
-        if (val & (1<<0))
-        {
-            // reading
-            Data = 0x20; // TODO get data from an actual device
-            Status[0] |= (1<<6); // RX not empty
-            Status[2] &= ~(1<<2); // RX
-        }
-        else
-        {
-            // writing
-            Status[2] |= (1<<2); // TX
-        }
-    }
-    SendingAddr = false;
-    TriggerIRQ();
+    TXData = val;
+    TXEmpty = false;
+    UpdateState();
 }
 
 u8 STM8I2C::ReceiveData()
 {
     printf("I2C: DATA READ\n");
-    return Data;
+
+    Status[0] &= ~(1<<6);
+    RXEmpty = true;
+    u8 ret = RXData;
+    UpdateState();
+    return ret;
 }
 
 
