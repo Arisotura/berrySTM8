@@ -92,7 +92,7 @@ void STM8GPTimer::Run(int cycles)
 
 void STM8GPTimer::UpdateEvent()
 {
-    printf("TIM%d UPDATE\n", Num);
+    //printf("TIM%d UPDATE\n", Num);
     Status[0] |= (1<<0);
     PreCount = 0;
 

@@ -77,9 +77,9 @@ template int STM8::OP_BTJT<7>();
 
 
 // call stack debug
-u32 call_pc[200];
+/*u32 call_pc[200];
 u32 call_sp[200];
-int call_level = 0;
+int call_level = 0;*/
 
 
 template<STM8::OperandType op, bool indY>
@@ -87,9 +87,10 @@ int STM8::OP_CALL()
 {
     u32 dst = CPUFetchOpAddr<op, indY>();
 
-    call_pc[call_level] = PC;
+    /*call_pc[call_level] = PC;
     call_sp[call_level] = SP;
-    call_level++;
+    call_level++;*/
+    //printf("CALL %04X (PC=%04X)\n", dst, PC);
 
     MemWrite(SP--, PC & 0xFF);
     MemWrite(SP--, (PC >> 8) & 0xFF);
@@ -134,9 +135,9 @@ int STM8::OP_CALLR()
 {
     s8 offset = (s8)CPUFetch();
 
-    call_pc[call_level] = PC;
+    /*call_pc[call_level] = PC;
     call_sp[call_level] = SP;
-    call_level++;
+    call_level++;*/
 
     MemWrite(SP--, PC & 0xFF);
     MemWrite(SP--, (PC >> 8) & 0xFF);
@@ -278,7 +279,7 @@ int STM8::OP_RET()
 
     CPUJumpTo((PC & 0xFF0000) | pc);
 
-    if (call_level == 0)
+    /*if (call_level == 0)
     {
         printf("!! CALL STACK FUCKED: RET BUT LEVEL IS 0\n");
     }
@@ -288,7 +289,7 @@ int STM8::OP_RET()
         printf("RET: PC=%06X/%06X SP=%06X/%06X\n", PC, call_pc[call_level], SP, call_sp[call_level]);
         if (PC != call_pc[call_level]) printf("!!! CALL STACK FUCKED: BAD PC\n");
         if (SP != call_sp[call_level]) printf("!!! CALL STACK FUCKED: BAD SP\n");
-    }
+    }*/
 
     return 4;
 }

@@ -20,10 +20,13 @@
 #include <string.h>
 #include <stdlib.h>
 #include "STM8.h"
+#include "GPIO.h"
 #include "DMA.h"
 #include "I2C.h"
 #include "GPTimer.h"
 #include "BasicTimer.h"
+
+#include "PMIC.h"
 
 
 STM8::STM8()
@@ -52,6 +55,9 @@ STM8::STM8()
 
     memset(IORegisters, 0, sizeof(IORegisters));
 
+    for (int i = 0; i < 9; i++)
+        GPIO[i] = new STM8GPIO(this, 0x5000 + (i*5), i);
+
     DMA = new STM8DMA(this, 0x5070);
     I2C = new STM8I2C(this, 0x5210);
 
@@ -59,6 +65,8 @@ STM8::STM8()
     TIM3 = new STM8GPTimer(this, 0x5280, 3);
     TIM4 = new STM8BasicTimer(this, 0x52E0, 4);
     TIM5 = new STM8GPTimer(this, 0x5300, 5);
+
+    I2C->RegisterDevice(0x48, PMIC::Start, PMIC::Stop, PMIC::Read, PMIC::Write);
 }
 
 STM8::~STM8()
@@ -70,6 +78,9 @@ STM8::~STM8()
 
     delete I2C;
     delete DMA;
+
+    for (int i = 0; i < 9; i++)
+        delete GPIO[i];
 }
 
 void STM8::Reset()
@@ -90,6 +101,9 @@ void STM8::Reset()
     ClkEnable[1] = 0x80;
     ClkEnable[2] = 0x00;
 
+    for (int i = 0; i < 9; i++)
+        GPIO[i]->Reset();
+
     DMA->Reset();
     I2C->Reset();
 
@@ -97,6 +111,9 @@ void STM8::Reset()
     TIM3->Reset();
     TIM4->Reset();
     TIM5->Reset();
+
+    // HACK
+    SetInput("PE0", 1);
 }
 
 
@@ -121,6 +138,27 @@ bool STM8::LoadImage(int type, const char* filename)
 }
 
 
+void STM8::SetInput(char* pin, u8 val)
+{
+    int bank = pin[1] - 'A';
+    if ((bank < 0) || (bank > 8)) return;
+    int num = pin[2] - '0';
+    if ((num < 0) || (num > 7)) return;
+
+    GPIO[bank]->SetInput(num, val);
+}
+
+u8 STM8::GetOutput(char* pin)
+{
+    int bank = pin[1] - 'A';
+    if ((bank < 0) || (bank > 8)) return 0xFF;
+    int num = pin[2] - '0';
+    if ((num < 0) || (num > 7)) return 0xFF;
+
+    return GPIO[bank]->GetOutput(num);
+}
+
+
 void STM8::CPUReset()
 {
     A = 0;
@@ -137,9 +175,9 @@ void STM8::CPUReset()
 void STM8::CPUJumpTo(u32 addr)
 {
     //printf("branch %06X -> %06X\n", PC, addr);
-    if (addr==0xBEFB) printf("fart %08X\n", PC);
-    if (addr==0xBC2C) printf("i2cwrite %08X\n", PC);
-    if (addr==0xBFAF) printf("BFAF! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    //if (addr==0xBEFB) printf("fart %08X\n", PC);
+    //if (addr==0xBC2C) printf("i2cwrite %08X\n", PC);
+    //if (addr==0xBFAF) printf("BFAF! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xBC2C) printf("I2C WRITE! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xBC72) printf("I2C READ! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
@@ -147,7 +185,7 @@ void STM8::CPUJumpTo(u32 addr)
 
 void STM8::CPUTriggerIRQ(int irq)
 {
-    printf("SERVICE IRQ %d %04X\n", irq, 0x8008+(irq<<2));
+    //printf("SERVICE IRQ %d %04X\n", irq, 0x8008+(irq<<2));
 
     MemWrite(SP--, PC & 0xFF);
     MemWrite(SP--, (PC >> 8) & 0xFF);
@@ -354,7 +392,7 @@ void STM8::UpdateIRQ()
 
             NextIRQ = i;
             IntMask &= ~(1<<i); // checkme
-            printf("triggering IRQ %d\n", i);
+            //printf("triggering IRQ %d\n", i);
             return;
         }
     }
@@ -414,6 +452,9 @@ void STM8::MemWrite(u32 addr, u8 val)
     if (addr < RAMSize)
     {
         //printf("STM8: RAM write %04X %02X\n", addr, val);
+        if (addr==4) printf("NEXTSTATE=%02X %06X\n", val, PC);
+        if (addr==5) printf("UICSTATE=%02X %06X\n", val, PC);
+        if (addr==6) printf("ZARP=%02X %06X\n", val, PC);
         RAM[addr] = val;
         return;
     }

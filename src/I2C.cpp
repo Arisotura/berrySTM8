@@ -17,6 +17,7 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "STM8.h"
 #include "I2C.h"
 
@@ -24,6 +25,9 @@
 STM8I2C::STM8I2C(STM8* stm, u32 iobase) : STM8Device(stm, iobase)
 {
     MapIORange(0x00, 0x0E);
+
+    memset(Devices, 0, sizeof(Devices));
+    NumDevices = 0;
 }
 
 STM8I2C::~STM8I2C()
@@ -63,6 +67,19 @@ void STM8I2C::Reset()
     CurRXData = 0;
     AckCurByte = false;
     AckNextByte = false;
+
+    CurDevice = nullptr;
+}
+
+
+void STM8I2C::RegisterDevice(u8 addr, void (*fnstart)(), void (*fnstop)(), u8 (*fnread)(), void (*fnwrite)(u8))
+{
+    sDevice* dev = &Devices[NumDevices++];
+    dev->Addr = addr;
+    dev->fnStart = fnstart;
+    dev->fnStop = fnstop;
+    dev->fnRead = fnread;
+    dev->fnWrite = fnwrite;
 }
 
 
@@ -164,6 +181,7 @@ void STM8I2C::Run(int cycles)
             Cnt[1] &= ~(1<<1);
             Status[2] &= ~(1<<2); // TX/RX bit
             Status[2] &= ~(1<<1);
+            Status[2] &= ~(1<<0); // master bit
             printf("I2C: STOP\n");
         }
 
@@ -182,8 +200,9 @@ void STM8I2C::UpdateState()
         State = 1;
         StateDuration = 1;
         Status[2] |= (1<<1); // busy
+        Status[2] |= (1<<0); // master bit
 
-        printf("UpdateState: START\n");
+        //printf("UpdateState: START\n");
     }
     else if (Cnt[1] & (1<<1))
     {
@@ -192,7 +211,13 @@ void STM8I2C::UpdateState()
         StateDuration = 1;
         Status[2] |= (1<<1); // busy
 
-        printf("UpdateState: STOP\n");
+        //printf("UpdateState: STOP\n");
+
+        if (CurDevice)
+        {
+            CurDevice->fnStop();
+            CurDevice = nullptr;
+        }
     }
     else if ((State == 1) && (!TXEmpty))
     {
@@ -204,7 +229,24 @@ void STM8I2C::UpdateState()
 
         CurAddr = TXData;
         TXEmpty = true;
-        printf("UpdateState: SEND ADDR\n");
+        //printf("UpdateState: SEND ADDR\n");
+
+        CurDevice = nullptr;
+        for (int i = 0; i < NumDevices; i++)
+        {
+            if (Devices[i].Addr == (CurAddr >> 1))
+            {
+                CurDevice = &Devices[i];
+                break;
+            }
+        }
+
+        if (CurDevice)
+        {
+            CurDevice->fnStart();
+        }
+        else
+            Status[1] |= (1<<2); // NACK
     }
     else if (State == 2)
     {
@@ -233,7 +275,15 @@ void STM8I2C::UpdateState()
         // TODO: send data to device here
         CurTXData = TXData;
         TXEmpty = true;
-        printf("UpdateState: SEND BYTE\n");
+        //printf("UpdateState: SEND BYTE\n");
+
+        if (CurDevice)
+        {
+            CurDevice->fnWrite(CurTXData);
+        }
+        else
+            Status[1] |= (1<<2); // NACK
+
         TriggerIRQ();
     }
     else if ((State == 4) )//&& RXEmpty)
@@ -256,8 +306,15 @@ void STM8I2C::UpdateState()
             Status[2] |= (1<<1); // busy
 
             // TODO: receive data from device here
-            CurRXData = 0x20;
-            printf("UpdateState: RECV BYTE\n");
+            //CurRXData = 0x20;
+            //printf("UpdateState: RECV BYTE\n");
+
+            if (CurDevice)
+            {
+                CurRXData = CurDevice->fnRead();
+            }
+            else
+                CurRXData = 0x00; // checkme
         }
         else
         {
@@ -265,14 +322,15 @@ void STM8I2C::UpdateState()
             StateDuration = 1; // checkme
             Status[2] |= (1<<1); // busy*/
 
-            printf("UpdateState: RECV STOP\n");
+            //printf("UpdateState: RECV STOP\n");
         }
     }
 }
 
 
 u8 STM8I2C::IORead(u32 addr)
-{printf("I2C: READ %06X    %06X\n", addr, STM->GetPC());
+{
+    //printf("I2C: READ %06X    %06X\n", addr, STM->GetPC());
     addr -= IOBase;
     switch (addr)
     {
@@ -298,7 +356,8 @@ u8 STM8I2C::IORead(u32 addr)
 }
 
 void STM8I2C::IOWrite(u32 addr, u8 val)
-{printf("I2C: WRITE %06X %02X     %06X\n", addr, val, STM->GetPC());
+{
+    //printf("I2C: WRITE %06X %02X     %06X\n", addr, val, STM->GetPC());
     addr -= IOBase;
     switch (addr)
     {
@@ -306,6 +365,8 @@ void STM8I2C::IOWrite(u32 addr, u8 val)
     case 0x01: SetCnt1(val); return;
 
     case 0x06: SendData(val); return;
+
+    case 0x08: Status[1] &= val; return;
 
     case 0x0A: IntCnt = val & 0x1F; return;
     }
@@ -316,7 +377,7 @@ void STM8I2C::IOWrite(u32 addr, u8 val)
 
 void STM8I2C::SetCnt0(u8 val)
 {
-    printf("I2C: CNT0=%02X\n", val);
+    //printf("I2C: CNT0=%02X\n", val);
 
     Cnt[0] = val & 0xFB;
     // TODO most of the effects (PE bit etc)
@@ -324,7 +385,7 @@ void STM8I2C::SetCnt0(u8 val)
 
 void STM8I2C::SetCnt1(u8 val)
 {
-    printf("I2C: CNT1=%02X  %06X\n", val, STM->GetPC());
+    //printf("I2C: CNT1=%02X  %06X\n", val, STM->GetPC());
 
     Cnt[1] = val & 0xBF;
 
@@ -336,7 +397,7 @@ void STM8I2C::SetCnt1(u8 val)
 
 void STM8I2C::SendData(u8 val)
 {
-    printf("I2C: SEND %02X  %06X\n", val, STM->GetPC());
+    //printf("I2C: SEND %02X  %06X\n", val, STM->GetPC());
     Status[0] &= ~0xCD; // clear status bits
 
     TXData = val;
@@ -346,7 +407,7 @@ void STM8I2C::SendData(u8 val)
 
 u8 STM8I2C::ReceiveData()
 {
-    printf("I2C: DATA READ\n");
+    //printf("I2C: DATA READ\n");
 
     Status[0] &= ~(1<<6);
     RXEmpty = true;

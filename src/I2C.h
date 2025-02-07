@@ -26,6 +26,8 @@ public:
     ~STM8I2C() override;
     void Reset() override;
 
+    void RegisterDevice(u8 addr, void (*fnstart)(), void (*fnstop)(), u8 (*fnread)(), void (*fnwrite)(u8));
+
     void Run(int cycles);
 
     u8 IORead(u32 addr) override;
@@ -54,6 +56,20 @@ private:
     u8 CurRXData;
 
     bool AckCurByte, AckNextByte;
+
+    struct sDevice
+    {
+        u8 Addr;
+        void (*fnStart)();
+        void (*fnStop)();
+        u8 (*fnRead)();
+        void (*fnWrite)(u8);
+    };
+
+    static const int kMaxDevices = 16;
+    sDevice Devices[kMaxDevices];
+    int NumDevices;
+    sDevice* CurDevice;
 
     void UpdateState();
 

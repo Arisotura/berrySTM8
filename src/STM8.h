@@ -31,6 +31,9 @@ public:
     // 0=EEPROM 1=FLASH
     bool LoadImage(int type, const char* filename);
 
+    void SetInput(char* pin, u8 val);
+    u8 GetOutput(char* pin);
+
     void CPUReset();
     void CPUJumpTo(u32 addr);
     void CPUTriggerIRQ(int irq);
@@ -253,6 +256,8 @@ private:
 
     void MapIORange(STM8Device* dev, u32 start, u32 end);
     friend class STM8Device;
+
+    STM8GPIO* GPIO[9];
 
     STM8DMA* DMA;
     STM8I2C* I2C;
