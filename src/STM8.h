@@ -229,7 +229,13 @@ private:
     u8 IntPrio[30];
     u32 IntMask;
 
+    u8 ExtIntCnt[4];
+    u8 ExtIntStatus[2];
+    u8 ExtIntPort[2];
+
     void UpdateIRQ();
+
+    void NotifyExtIRQ(u8 port, u8 pin, u8 oldval, u8 newval);
 
     // ---- memory ------------------------------
 
@@ -261,6 +267,7 @@ private:
 
     STM8DMA* DMA;
     STM8I2C* I2C;
+    STM8SPI* SPI[2];
 
     STM8GPTimer* TIM2;
     STM8GPTimer* TIM3;
@@ -268,6 +275,8 @@ private:
     STM8GPTimer* TIM5;
 
     STM8Device* IORegisters[0x800];
+
+    friend class STM8GPIO;
 
     // ---- clock -------------------------------
 

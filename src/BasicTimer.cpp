@@ -72,7 +72,7 @@ void STM8BasicTimer::Run(int cycles)
 
 void STM8BasicTimer::UpdateEvent()
 {
-    printf("TIM%d UPDATE\n", Num);
+    printf("TIM%d UPDATE  %02X %02X\n", Num, STM->MemRead(0x1A3), STM->MemRead(0x1A4));
     Status |= (1<<0);
     PreCount = 0;
 

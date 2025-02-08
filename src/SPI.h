@@ -16,34 +16,23 @@
     with berrySTM8. If not, see http://www.gnu.org/licenses/.
 */
 
-#ifndef GPIO_H
-#define GPIO_H
+#ifndef SPI_H
+#define SPI_H
 
 #include "types.h"
 
-class STM8GPIO : public STM8Device
+class STM8SPI : public STM8Device
 {
 public:
-    STM8GPIO(STM8* stm, u32 iobase, u8 num);
-    ~STM8GPIO() override;
+    STM8SPI(STM8* stm, u32 iobase, u8 num);
+    ~STM8SPI() override;
     void Reset() override;
-
-    bool SetInput(u8 num, u8 val);
-    u8 GetOutput(u8 num);
-
-    void Update();
 
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:
     u8 Num;
-    char Port;
-
-    u8 Output;
-    u8 Input;
-    u8 Dir;
-    u8 Cnt1, Cnt2;
 };
 
-#endif // GPIO_H
+#endif // SPI_H

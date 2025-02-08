@@ -44,13 +44,22 @@ void STM8GPIO::Reset()
 }
 
 
-void STM8GPIO::SetInput(u8 num, u8 val)
+bool STM8GPIO::SetInput(u8 num, u8 val)
 {
     u8 mask = (1<<num);
+    u8 oldval = (Input & mask) ? 1 : 0;
     if (val) Input |= mask;
     else     Input &= ~mask;
 
     Update();
+
+    if ((!(Dir & mask)) && (Cnt2 & mask))
+    {
+        // check for interrupt
+        STM->NotifyExtIRQ(Num, num, oldval, val);
+    }
+
+    return false;
 }
 
 u8 STM8GPIO::GetOutput(u8 num)

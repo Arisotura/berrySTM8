@@ -16,34 +16,45 @@
     with berrySTM8. If not, see http://www.gnu.org/licenses/.
 */
 
-#ifndef GPIO_H
-#define GPIO_H
+#include <stdio.h>
+#include <string.h>
+#include "STM8.h"
+#include "SPI.h"
 
-#include "types.h"
 
-class STM8GPIO : public STM8Device
+STM8SPI::STM8SPI(STM8* stm, u32 iobase, u8 num) : STM8Device(stm, iobase), Num(num)
 {
-public:
-    STM8GPIO(STM8* stm, u32 iobase, u8 num);
-    ~STM8GPIO() override;
-    void Reset() override;
+    MapIORange(0x00, 0x07);
+}
 
-    bool SetInput(u8 num, u8 val);
-    u8 GetOutput(u8 num);
+STM8SPI::~STM8SPI()
+{
+    //
+}
 
-    void Update();
+void STM8SPI::Reset()
+{
+    //
+}
 
-    u8 IORead(u32 addr) override;
-    void IOWrite(u32 addr, u8 val) override;
 
-private:
-    u8 Num;
-    char Port;
+u8 STM8SPI::IORead(u32 addr)
+{
+    addr -= IOBase;
+    switch (addr)
+    {
+    }
 
-    u8 Output;
-    u8 Input;
-    u8 Dir;
-    u8 Cnt1, Cnt2;
-};
+    printf("SPI%d: unknown read %06X  %06X\n", Num, IOBase+addr, STM->GetPC());
+    return 0;
+}
 
-#endif // GPIO_H
+void STM8SPI::IOWrite(u32 addr, u8 val)
+{
+    addr -= IOBase;
+    switch (addr)
+    {
+    }
+
+    printf("SPI%d: unknown write %06X %02X\n", Num, IOBase+addr, val);
+}

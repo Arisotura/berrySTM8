@@ -23,6 +23,7 @@
 #include "GPIO.h"
 #include "DMA.h"
 #include "I2C.h"
+#include "SPI.h"
 #include "GPTimer.h"
 #include "BasicTimer.h"
 
@@ -60,6 +61,8 @@ STM8::STM8()
 
     DMA = new STM8DMA(this, 0x5070);
     I2C = new STM8I2C(this, 0x5210);
+    SPI[0] = new STM8SPI(this, 0x5200, 0);
+    SPI[1] = new STM8SPI(this, 0x53C0, 1);
 
     TIM2 = new STM8GPTimer(this, 0x5250, 2);
     TIM3 = new STM8GPTimer(this, 0x5280, 3);
@@ -76,6 +79,8 @@ STM8::~STM8()
     delete TIM4;
     delete TIM5;
 
+    delete SPI[0];
+    delete SPI[1];
     delete I2C;
     delete DMA;
 
@@ -90,6 +95,15 @@ void STM8::Reset()
     for (int i = 0; i < 30; i++)
         IntPrio[i] = 3;
     IntMask = 0;
+
+    ExtIntCnt[0] = 0;
+    ExtIntCnt[1] = 0;
+    ExtIntCnt[2] = 0;
+    ExtIntCnt[3] = 0;
+    ExtIntStatus[0] = 0;
+    ExtIntStatus[1] = 0;
+    ExtIntPort[0] = 0;
+    ExtIntPort[1] = 0;
 
     memset(RAM, 0, RAMSize);
 
@@ -106,14 +120,13 @@ void STM8::Reset()
 
     DMA->Reset();
     I2C->Reset();
+    SPI[0]->Reset();
+    SPI[1]->Reset();
 
     TIM2->Reset();
     TIM3->Reset();
     TIM4->Reset();
     TIM5->Reset();
-
-    // HACK
-    SetInput("PE0", 1);
 }
 
 
@@ -145,6 +158,8 @@ void STM8::SetInput(char* pin, u8 val)
     int num = pin[2] - '0';
     if ((num < 0) || (num > 7)) return;
 
+    //printf("PIN %s (%d %d) VAL=%d\n", pin, bank, num, val);
+
     GPIO[bank]->SetInput(num, val);
 }
 
@@ -156,6 +171,91 @@ u8 STM8::GetOutput(char* pin)
     if ((num < 0) || (num > 7)) return 0xFF;
 
     return GPIO[bank]->GetOutput(num);
+}
+
+void STM8::NotifyExtIRQ(u8 port, u8 pin, u8 oldval, u8 newval)
+{
+    u32 portsel;
+
+    portsel  = ((ExtIntPort[0] & 0x03) << 2);
+    portsel |= ((ExtIntPort[0] & 0x7C) << 4);
+    portsel |= ((ExtIntPort[1] & 0x1F) << 11);
+
+    /*if ((port <= 4) || (port == 5 && pin == 0))
+    {
+        u16 cnt = ExtIntCnt[0] | (ExtIntCnt[1] << 8);
+        u16 trig = (cnt >> (2*pin)) & 0x3;
+        bool irq;
+        switch (trig)
+        {
+        case 0: // falling edge and low level
+            irq = !newval;
+            break;
+        case 1: // rising edge
+            irq = (!oldval) && newval;
+            break;
+        case 2: // falling edge
+            irq = oldval && (!newval);
+            break;
+        case 3: // rising and falling edge
+            irq = (oldval != newval);
+            break;
+        }
+
+        if (irq)
+        {
+            ExtIntStatus[0] |= (1<<pin);
+            TriggerIRQ(8 + pin);
+        }
+    }*/
+
+    if (ExtIntPort[0] & (1<<7))
+        portsel &= ~(3<<8);
+    else
+        portsel &= ~(3<<10);
+
+    if (ExtIntPort[1] & (1<<5))
+        portsel &= ~(3<<2);
+    else
+        portsel &= ~(3<<12);
+
+    if (ExtIntPort[1] & (1<<6))
+        portsel &= ~(3<<6);
+    else
+        portsel &= ~(3<<14);
+
+    int bitpos = port * 2;
+    if (pin >= 4) bitpos++;
+    if (portsel & (1<<bitpos))
+    {
+        u16 cnt = ExtIntCnt[2] | (ExtIntCnt[3] << 8);
+        int portpos[] = {-1, 0, -1, 1, 2, 3, 4, 5, -1};
+        u16 trig = (cnt >> (portpos[port]*2)) & 0x3;
+        bool irq;
+        switch (trig)
+        {
+            case 0: // falling edge and low level
+                irq = !newval;
+                break;
+            case 1: // rising edge
+                irq = (!oldval) && newval;
+                break;
+            case 2: // falling edge
+                irq = oldval && (!newval);
+                break;
+            case 3: // rising and falling edge
+                irq = (oldval != newval);
+                break;
+        }
+
+        if (irq)
+        {
+            ExtIntStatus[1] |= (1 << portpos[port]);
+
+            int irqnum[] = {-1, 6, -1, 7, 5, 5, 6, 7, -1};
+            TriggerIRQ(irqnum[port]);
+        }
+    }
 }
 
 
@@ -180,6 +280,8 @@ void STM8::CPUJumpTo(u32 addr)
     //if (addr==0xBFAF) printf("BFAF! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xBC2C) printf("I2C WRITE! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xBC72) printf("I2C READ! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    if (addr==0xB074) printf("FIFO WRITE A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    if (addr==0xEEC8) printf("UICWAKEUP A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
 }
 
@@ -546,11 +648,20 @@ u8 STM8::IORead(u32 addr)
     switch (addr)
     {
     case 0x5054: return FLASH_IAPSR;
+
+    case 0x50A0: return ExtIntCnt[0];
+    case 0x50A1: return ExtIntCnt[1];
+    case 0x50A2: return ExtIntCnt[2];
+    case 0x50A3: return ExtIntStatus[0];
+    case 0x50A4: return ExtIntStatus[1];
+    case 0x50A5: return ExtIntPort[0];
+    case 0x50AA: return ExtIntCnt[3];
+    case 0x50AB: return ExtIntPort[1];
+
     case 0x50C3: return ClkEnable[0];
     case 0x50C4: return ClkEnable[1];
     case 0x50D0: return ClkEnable[2];
     case 0x514C: return 4;
-    case 0x53C3: return 3; // HACK
     }
 
     printf("STM8: unknown IO read %06X  @ %06X\n", addr, PC);
@@ -599,10 +710,43 @@ void STM8::IOWrite(u32 addr, u8 val)
         }
         return;
 
+    case 0x50A0:
+        if ((CC & (Flag_I0|Flag_I1)) != (Flag_I0|Flag_I1)) return;
+        ExtIntCnt[0] = val;
+        return;
+    case 0x50A1:
+        if ((CC & (Flag_I0|Flag_I1)) != (Flag_I0|Flag_I1)) return;
+        ExtIntCnt[1] = val;
+        return;
+    case 0x50A2:
+        if ((CC & (Flag_I0|Flag_I1)) != (Flag_I0|Flag_I1)) return;
+        ExtIntCnt[2] = val;
+        return;
+    case 0x50A3:
+        ExtIntStatus[0] &= ~val;
+        return;
+    case 0x50A4:
+        ExtIntStatus[1] &= ~val;
+        return;
+    case 0x50A5:
+        ExtIntPort[0] = val;
+        return;
+    case 0x50AA:
+        if ((CC & (Flag_I0|Flag_I1)) != (Flag_I0|Flag_I1)) return;
+        ExtIntCnt[3] = val & 0x0F;
+        return;
+    case 0x50AB:
+        ExtIntPort[1] = val & 0x7F;
+        return;
+
     case 0x50C3: ClkEnable[0] = val; return;
     case 0x50C4: ClkEnable[1] = val; return;
     case 0x50D0: ClkEnable[2] = val; return;
     }
+
+
+    // watchdog shit
+    if (addr == 0x50E0) return;
 
     printf("STM8: unknown IO write %06X %02X  @ %06X\n", addr, val, PC);
 }

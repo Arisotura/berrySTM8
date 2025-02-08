@@ -68,6 +68,7 @@ u8 Read()
         // charger status
         // bit6 = AC, bit7 = USB
         ret = 0x40;
+        //ret = 0;
         break;
 
     case 0x07:

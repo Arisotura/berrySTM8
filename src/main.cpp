@@ -70,6 +70,12 @@ int main()
 
     stm->Reset();
 
+    stm->SetInput("PE0", 1); // pin 19
+    stm->SetInput("PG3", 1); // pin 17
+    stm->SetInput("PD2", 1); // pin 27
+    stm->SetInput("PE5", 1); // sync button
+    stm->SetInput("PE7", 1); // power button
+
     u32 keymask = 0;
     bool touch = false;
     int touchX = 0, touchY = 0;
@@ -84,6 +90,16 @@ int main()
             {
             case SDL_QUIT:
                 quit = true;
+                break;
+
+            case SDL_KEYDOWN:
+                if (evt.key.keysym.scancode == SDL_SCANCODE_P)
+                    stm->SetInput("PE7", 0);
+                break;
+
+            case SDL_KEYUP:
+                if (evt.key.keysym.scancode == SDL_SCANCODE_P)
+                    stm->SetInput("PE7", 1);
                 break;
 
             /*case SDL_KEYDOWN:
@@ -153,7 +169,8 @@ int main()
             SDL_UnlockTexture(framebuf);
         }*/
 
-        stm->CPUExecute(64);
+        //stm->CPUExecute(64);
+        stm->CPUExecute(65536);
 
         // redraw
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);
