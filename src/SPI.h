@@ -33,6 +33,20 @@ public:
 
 private:
     u8 Num;
+
+    u8 Cnt[2];
+    u8 IntCnt;
+    u8 Status;
+    u8 RXData, TXData;
+    u8 CRCPoly;
+    u8 RXCRC;
+    u8 TXCRC;
+
+    u8 CurRXData;
+    u8 CurTXData;
+
+    void SendData(u8 val);
+    u8 ReceiveData();
 };
 
 #endif // SPI_H

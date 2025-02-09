@@ -176,15 +176,20 @@ u8 STM8::GetOutput(char* pin)
 void STM8::NotifyExtIRQ(u8 port, u8 pin, u8 oldval, u8 newval)
 {
     u32 portsel;
+    int bitpos = port * 2;
+    if (pin >= 4) bitpos++;
 
+    // portsel: 2 bits per port - HHGGFFEE:DDCCBBAA - one bit per 4 pins
     portsel  = ((ExtIntPort[0] & 0x03) << 2);
     portsel |= ((ExtIntPort[0] & 0x7C) << 4);
     portsel |= ((ExtIntPort[1] & 0x1F) << 11);
 
-    /*if ((port <= 4) || (port == 5 && pin == 0))
+    // check for per-bit interrupt
+
+    if (!(portsel & (1<<bitpos)))
     {
         u16 cnt = ExtIntCnt[0] | (ExtIntCnt[1] << 8);
-        u16 trig = (cnt >> (2*pin)) & 0x3;
+        u16 trig = (cnt >> (pin*2)) & 0x3;
         bool irq;
         switch (trig)
         {
@@ -204,28 +209,32 @@ void STM8::NotifyExtIRQ(u8 port, u8 pin, u8 oldval, u8 newval)
 
         if (irq)
         {
-            ExtIntStatus[0] |= (1<<pin);
+            ExtIntStatus[0] |= (1 << pin);
             TriggerIRQ(8 + pin);
         }
-    }*/
+
+        return;
+    }
+
+    // adjust portsel based on which ports are used for the per-port interrupts
 
     if (ExtIntPort[0] & (1<<7))
-        portsel &= ~(3<<8);
+        portsel &= ~(3<<8);     // exclude port E
     else
-        portsel &= ~(3<<10);
+        portsel &= ~(3<<10);    // exclude port F
 
     if (ExtIntPort[1] & (1<<5))
-        portsel &= ~(3<<2);
+        portsel &= ~(3<<2);     // exclude port B
     else
-        portsel &= ~(3<<12);
+        portsel &= ~(3<<12);    // exclude port G
 
     if (ExtIntPort[1] & (1<<6))
-        portsel &= ~(3<<6);
+        portsel &= ~(3<<6);     // exclude port D
     else
-        portsel &= ~(3<<14);
+        portsel &= ~(3<<14);    // exclude port H
 
-    int bitpos = port * 2;
-    if (pin >= 4) bitpos++;
+    // check for per-port interrupt
+
     if (portsel & (1<<bitpos))
     {
         u16 cnt = ExtIntCnt[2] | (ExtIntCnt[3] << 8);
