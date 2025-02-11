@@ -32,7 +32,19 @@ public:
     void IOWrite(u32 addr, u8 val) override;
 
 private:
-    //
+    u8 Cnt[3];
+    u8 Status;
+    u16 Data;
+    u16 HighThreshold;
+    u16 LowThreshold;
+    u32 ChanSequence;
+    u32 TriggerDisable;
+
+    void TriggerIRQ();
+
+    void SetCnt0(u8 val);
+    void SetCnt1(u8 val);
+    void SetCnt2(u8 val);
 };
 
 #endif // ADC_H

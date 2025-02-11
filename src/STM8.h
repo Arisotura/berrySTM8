@@ -294,6 +294,8 @@ private:
     STM8BasicTimer* TIM4;
     STM8GPTimer* TIM5;
 
+    STM8ADC* ADC;
+
     STM8Device* IORegisters[0x800];
 
     friend class STM8GPIO;

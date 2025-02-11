@@ -26,6 +26,7 @@
 #include "SPI.h"
 #include "GPTimer.h"
 #include "BasicTimer.h"
+#include "ADC.h"
 
 #include "PMIC.h"
 
@@ -69,11 +70,15 @@ STM8::STM8()
     TIM4 = new STM8BasicTimer(this, 0x52E0, 4);
     TIM5 = new STM8GPTimer(this, 0x5300, 5);
 
+    ADC = new STM8ADC(this, 0x5340);
+
     I2C->RegisterDevice(0x48, PMIC::Start, PMIC::Stop, PMIC::Read, PMIC::Write);
 }
 
 STM8::~STM8()
 {
+    delete ADC;
+
     delete TIM2;
     delete TIM3;
     delete TIM4;
@@ -127,6 +132,8 @@ void STM8::Reset()
     TIM3->Reset();
     TIM4->Reset();
     TIM5->Reset();
+
+    ADC->Reset();
 }
 
 
@@ -335,6 +342,7 @@ void STM8::CPUJumpTo(u32 addr)
     if (addr==0xB074) printf("FIFO WRITE A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xEEC8) printf("UICWAKEUP A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0x9488) printf("REGCLEARBIT A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    //if (addr==0x9321) printf("BRAINROT A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
 }
 
