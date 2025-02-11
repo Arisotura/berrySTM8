@@ -75,6 +75,7 @@ int main()
     stm->SetInput("PD2", 1); // pin 27
     stm->SetInput("PE5", 1); // sync button
     stm->SetInput("PE7", 1); // power button
+    stm->SetInput("PB4", 1); // SPI CS
 
     u32 keymask = 0;
     bool touch = false;
@@ -100,6 +101,93 @@ int main()
             case SDL_KEYUP:
                 if (evt.key.keysym.scancode == SDL_SCANCODE_P)
                     stm->SetInput("PE7", 1);
+
+                if (evt.key.keysym.scancode == SDL_SCANCODE_S)
+                {
+                    printf("SYNC\n");
+                    stm->SPISelect(0);
+                    stm->CPUExecute(1024);
+                    stm->SPISend(0, 0x7F);
+                    stm->CPUExecute(64);
+                    stm->SPISend(0, 0); // dummy
+                    u8 resp = stm->SPIReceive(0);
+                    stm->CPUExecute(1024);
+                    stm->SPIRelease(0);
+                    printf("SYNC RESP = %02X\n", resp);
+                }
+
+                if (evt.key.keysym.scancode == SDL_SCANCODE_T)
+                {
+                    printf("UICSTATE\n");
+                    stm->SPISelect(0);
+                    stm->CPUExecute(1024);
+                    stm->SPISend(0, 0x05);
+                    stm->CPUExecute(64);
+                    stm->SPISend(0, 0); // dummy
+                    u8 resp = stm->SPIReceive(0);
+                    stm->CPUExecute(1024);
+                    stm->SPIRelease(0);
+                    printf("UICSTATE RESP = %02X\n", resp);
+                }
+
+                if (evt.key.keysym.scancode == SDL_SCANCODE_U)
+                {
+                    printf("UICSTATE SET\n");
+                    stm->SPISelect(0);
+                    stm->CPUExecute(1024);
+                    stm->SPISend(0, 0x01);
+                    stm->CPUExecute(64);
+                    stm->SPISend(0, 0x03);
+                    stm->CPUExecute(1024);
+                    stm->SPIRelease(0);
+                    printf("UICSTATE SET DONE\n");
+                }
+
+                if (evt.key.keysym.scancode == SDL_SCANCODE_V)
+                {
+                    printf("UICVERSION GET\n");
+                    stm->SPISelect(0);
+                    stm->CPUExecute(1024);
+                    stm->SPISend(0, 0x0B);
+                    stm->CPUExecute(64);
+                    u8 res[4];
+                    for (int i = 0; i < 4; i++)
+                    {
+                        stm->SPISend(0, 0); // dummy
+                        res[i] = stm->SPIReceive(0);
+                        printf("recv %02X\n", res[i]);
+                        stm->CPUExecute(64);
+                    }
+                    stm->CPUExecute(1024);
+                    stm->SPIRelease(0);
+                    printf("UICVERSION: %08X\n", *(u32*)&res[0]);
+                }
+
+                if (evt.key.keysym.scancode == SDL_SCANCODE_E)
+                {
+                    printf("UICVERSION GET\n");
+                    stm->SPISelect(0);
+                    stm->CPUExecute(1024);
+                    stm->SPISend(0, 0x03);
+                    stm->CPUExecute(64);
+                    stm->SPISend(0, 0x11);
+                    stm->CPUExecute(64);
+                    stm->SPISend(0, 0x00);
+                    stm->CPUExecute(64);
+                    stm->SPISend(0, 0x10);
+                    stm->CPUExecute(1024);
+                    u8 res[16];
+                    for (int i = 0; i < 16; i++)
+                    {
+                        stm->SPISend(0, 0); // dummy
+                        res[i] = stm->SPIReceive(0);
+                        stm->CPUExecute(64);
+                    }
+                    stm->CPUExecute(1024);
+                    stm->SPIRelease(0);
+                    for (int i = 0; i < 16; i++) printf("%02X ", res[i]);
+                    printf("\n");
+                }
                 break;
 
             /*case SDL_KEYDOWN:

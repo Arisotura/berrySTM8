@@ -29,6 +29,7 @@ public:
     void Reset() override;
 
     bool SetInput(u8 num, u8 val);
+    u8 GetInput(u8 num);
     u8 GetOutput(u8 num);
 
     void Update();

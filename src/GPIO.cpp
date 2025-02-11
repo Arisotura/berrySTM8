@@ -62,6 +62,12 @@ bool STM8GPIO::SetInput(u8 num, u8 val)
     return false;
 }
 
+u8 STM8GPIO::GetInput(u8 num)
+{
+    u8 mask = (1<<num);
+    return (Input & mask) ? 1 : 0;
+}
+
 u8 STM8GPIO::GetOutput(u8 num)
 {
     u8 mask = (1<<num);

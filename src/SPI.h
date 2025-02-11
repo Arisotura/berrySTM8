@@ -28,11 +28,25 @@ public:
     ~STM8SPI() override;
     void Reset() override;
 
+    bool IsMaster();
+    void UpdateMasterMode();
+
+    void TriggerIRQ();
+
+    void SlaveSelect();
+    void SlaveSend(u8 val);
+    u8 SlaveReceive();
+    void SlaveRelease();
+
+    int RXDMALength();
+    int TXDMALength();
+
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
 
 private:
     u8 Num;
+    u8 IntNum;
 
     u8 Cnt[2];
     u8 IntCnt;
@@ -42,11 +56,18 @@ private:
     u8 RXCRC;
     u8 TXCRC;
 
+    bool SlaveSel;
     u8 CurRXData;
     u8 CurTXData;
 
+    void SetCnt0(u8 val);
+    void SetCnt1(u8 val);
+    void SetIntCnt(u8 val);
     void SendData(u8 val);
     u8 ReceiveData();
+
+    void CheckRXDMA();
+    void CheckTXDMA();
 };
 
 #endif // SPI_H

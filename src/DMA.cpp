@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include "STM8.h"
 #include "DMA.h"
+#include "SPI.h"
 
 
 STM8DMA::STM8DMA(STM8* stm, u32 iobase) : STM8Device(stm, iobase)
@@ -260,6 +261,43 @@ void STM8DMA::SetChanStatus(int chan, u8 val)
 }
 
 
+void STM8DMA::TriggerIRQ(int chan)
+{
+    IntStatus |= (1<<chan);
+    STM->TriggerIRQ((chan >= 2) ? 3 : 2);
+}
+
+
+void STM8DMA::CheckPeripheralDMA(int chan)
+{
+    if (!(Cnt & (1<<0))) return;
+    if (!(ChanCnt[chan] & (1<<0))) return;
+
+    int len;
+    switch (chan)
+    {
+    case 0:
+        if ((len = STM->SPI[1]->RXDMALength())) break;
+        break;
+
+    case 1:
+        if ((len = STM->SPI[0]->RXDMALength())) break;
+        break;
+
+    case 2:
+        if ((len = STM->SPI[0]->TXDMALength())) break;
+        break;
+
+    case 3:
+        if ((len = STM->SPI[1]->TXDMALength())) break;
+        break;
+    }
+
+    if (!len) return;
+    RunPeripheralDMA(chan, len);
+}
+
+
 void STM8DMA::KickDMA(int chan)
 {
     if (!(Cnt & (1<<0))) return;
@@ -272,13 +310,13 @@ void STM8DMA::KickDMA(int chan)
     ChanCurPAddr[chan] = ChanPAddr[chan];
     ChanCurMAddr[chan] = ChanMAddr[chan];
 
-    if (Cnt & (1<<6))
+    if (ChanCnt[chan] & (1<<6))
     {
         RunMemoryDMA(chan);
     }
     else
     {
-        // TODO
+        CheckPeripheralDMA(chan);
     }
 }
 
@@ -345,7 +383,73 @@ void STM8DMA::RunMemoryDMA(int chan)
     }
 
     ChanStatus[chan] |= (1<<2); // half transaction flag
-    ChanStatus[chan] |= (1<<1); // end of transaction flag
+    if (ChanCnt[chan] & (1<<2))
+        TriggerIRQ(chan);
 
-    // TODO: raise interrupt
+    ChanStatus[chan] |= (1<<1); // end of transaction flag
+    if (ChanCnt[chan] & (1<<1))
+        TriggerIRQ(chan);
+}
+
+void STM8DMA::RunPeripheralDMA(int chan, int len)
+{
+    if (len > ChanLength[chan])
+        len = ChanLength[chan];
+
+    printf("run peripheral DMA, %06X -> %06X %d\n", ChanPAddr[chan], ChanMAddr[chan], len);
+
+    // TODO: not make this instant, eventually
+    // TODO: half length IRQ
+
+    int meminc = (ChanCnt[chan] & (1<<5)) ? 1 : -1;
+
+    if (ChanStatus[chan] & (1<<3))
+    {
+        // 16-bit transfer
+
+        printf("16-bit peripheral DMA???\n");
+        return;
+    }
+    else
+    {
+        // 8-bit transfer
+
+        if (ChanCnt[chan] & (1<<3))
+        {
+            // memory to peripheral
+            while (len > 0)
+            {
+                u8 val = STM->MemRead(ChanCurMAddr[chan]);
+                ChanCurMAddr[chan] += meminc;
+                ChanCurMAddr[chan] &= 0xFFFF;
+
+                STM->MemWrite(ChanCurPAddr[chan], val);
+
+                ChanLength[chan]--;
+                len--;
+            }
+        }
+        else
+        {
+            // peripheral to memory
+            while (len > 0)
+            {
+                u8 val = STM->MemRead(ChanCurPAddr[chan]);
+
+                STM->MemWrite(ChanCurMAddr[chan], val);
+                ChanCurMAddr[chan] += meminc;
+                ChanCurMAddr[chan] &= 0xFFFF;
+
+                ChanLength[chan]--;
+                len--;
+            }
+        }
+    }
+
+    if (ChanLength[chan] == 0)
+    {
+        ChanStatus[chan] |= (1<<1); // end of transaction flag
+        if (ChanCnt[chan] & (1<<1))
+            TriggerIRQ(chan);
+    }
 }

@@ -151,7 +151,7 @@ bool STM8::LoadImage(int type, const char* filename)
 }
 
 
-void STM8::SetInput(char* pin, u8 val)
+void STM8::SetInput(const char* pin, u8 val)
 {
     int bank = pin[1] - 'A';
     if ((bank < 0) || (bank > 8)) return;
@@ -163,7 +163,17 @@ void STM8::SetInput(char* pin, u8 val)
     GPIO[bank]->SetInput(num, val);
 }
 
-u8 STM8::GetOutput(char* pin)
+u8 STM8::GetInput(const char* pin)
+{
+    int bank = pin[1] - 'A';
+    if ((bank < 0) || (bank > 8)) return 0xFF;
+    int num = pin[2] - '0';
+    if ((num < 0) || (num > 7)) return 0xFF;
+
+    return GPIO[bank]->GetInput(num);
+}
+
+u8 STM8::GetOutput(const char* pin)
 {
     int bank = pin[1] - 'A';
     if ((bank < 0) || (bank > 8)) return 0xFF;
@@ -265,6 +275,38 @@ void STM8::NotifyExtIRQ(u8 port, u8 pin, u8 oldval, u8 newval)
             TriggerIRQ(irqnum[port]);
         }
     }
+}
+
+
+bool STM8::SPISelect(int num)
+{
+    // TODO check if the GPIO is configured correctly
+    if ((num < 0) || (num > 1)) return false;
+
+    SPI[num]->SlaveSelect();
+    return true;
+}
+
+void STM8::SPISend(int num, u8 val)
+{
+    // TODO check that CS is low
+    if ((num < 0) || (num > 1)) return;
+
+    SPI[num]->SlaveSend(val);
+}
+
+u8 STM8::SPIReceive(int num)
+{
+    if ((num < 0) || (num > 1)) return 0;
+
+    return SPI[num]->SlaveReceive();
+}
+
+void STM8::SPIRelease(int num)
+{
+    if ((num < 0) || (num > 1)) return;
+
+    SPI[num]->SlaveRelease();
 }
 
 
@@ -560,6 +602,7 @@ u8 STM8::MemRead(u32 addr)
 
 void STM8::MemWrite(u32 addr, u8 val)
 {
+    if (addr==0x131) printf("KAKAPIPI %02X %06X\n", val, PC);
     if (addr < RAMSize)
     {
         //printf("STM8: RAM write %04X %02X\n", addr, val);

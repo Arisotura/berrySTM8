@@ -19,12 +19,16 @@
 #ifndef DMA_H
 #define DMA_H
 
+#include "types.h"
+
 class STM8DMA : public STM8Device
 {
 public:
     STM8DMA(STM8* stm, u32 base);
     ~STM8DMA() override;
     void Reset() override;
+
+    void CheckPeripheralDMA(int chan);
 
     u8 IORead(u32 addr) override;
     void IOWrite(u32 addr, u8 val) override;
@@ -56,8 +60,11 @@ private:
     void SetChanCnt(int chan, u8 val);
     void SetChanStatus(int chan, u8 val);
 
+    void TriggerIRQ(int chan);
+
     void KickDMA(int chan);
     void RunMemoryDMA(int chan);
+    void RunPeripheralDMA(int chan, int len);
 };
 
 #endif // DMA_H

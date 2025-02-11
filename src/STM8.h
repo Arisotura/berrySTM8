@@ -31,8 +31,14 @@ public:
     // 0=EEPROM 1=FLASH
     bool LoadImage(int type, const char* filename);
 
-    void SetInput(char* pin, u8 val);
-    u8 GetOutput(char* pin);
+    void SetInput(const char* pin, u8 val);
+    u8 GetInput(const char* pin);
+    u8 GetOutput(const char* pin);
+
+    bool SPISelect(int num);
+    void SPISend(int num, u8 val);
+    u8 SPIReceive(int num);
+    void SPIRelease(int num);
 
     void CPUReset();
     void CPUJumpTo(u32 addr);
@@ -277,6 +283,8 @@ private:
     STM8Device* IORegisters[0x800];
 
     friend class STM8GPIO;
+    friend class STM8DMA;
+    friend class STM8SPI;
 
     // ---- clock -------------------------------
 
