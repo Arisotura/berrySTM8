@@ -18,6 +18,7 @@
 
 int OP_UNK();
 int OP_CCF();
+int OP_HALT();
 int OP_NOP();
 int OP_RCF();
 int OP_RIM();
@@ -25,6 +26,7 @@ int OP_RVF();
 int OP_SIM();
 int OP_SCF();
 int OP_TRAP();
+int OP_WFI();
 int OP_Prefix72();
 int OP_Prefix90();
 int OP_Prefix91();
@@ -164,10 +166,10 @@ InstrFunc InstrTable[256] =
     &STM8::OP_INC_Mem<Op_ShortDirectSP,false>, &STM8::OP_TNZ_Mem<Op_ShortDirectSP,false>, &STM8::OP_SWAP_Mem<Op_ShortDirectSP,false>, &STM8::OP_CLR_Mem<Op_ShortDirectSP,false>,
 
     // 10
-    &STM8::OP_SUB_Mem<Op_ShortDirectSP,false>, &STM8::OP_CP_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                             &STM8::OP_CPW_Mem<Op_ShortDirectSP,false>,
-    &STM8::OP_AND_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                            &STM8::OP_LDW_Ind<Op_ShortDirectSP,true>,  &STM8::OP_LDW_Mem<Op_ShortDirectSP,true>,
-    &STM8::OP_XOR_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                            &STM8::OP_OR_Mem<Op_ShortDirectSP,false>,  &STM8::OP_ADD_Mem<Op_ShortDirectSP,false>,
-    &STM8::OP_ADDW_Imm<false>,                 &STM8::OP_SUBW_Imm<false>,                &STM8::OP_LDW_Ind<Op_ShortDirectSP,false>, &STM8::OP_LDW_Mem<Op_ShortDirectSP,false>,
+    &STM8::OP_SUB_Mem<Op_ShortDirectSP,false>, &STM8::OP_CP_Mem<Op_ShortDirectSP,false>,  &STM8::OP_UNK,                             &STM8::OP_CPW_Mem<Op_ShortDirectSP,false>,
+    &STM8::OP_AND_Mem<Op_ShortDirectSP,false>, &STM8::OP_BCP_Mem<Op_ShortDirectSP,false>, &STM8::OP_LDW_Ind<Op_ShortDirectSP,true>,  &STM8::OP_LDW_Mem<Op_ShortDirectSP,true>,
+    &STM8::OP_XOR_Mem<Op_ShortDirectSP,false>, &STM8::OP_UNK,                             &STM8::OP_OR_Mem<Op_ShortDirectSP,false>,  &STM8::OP_ADD_Mem<Op_ShortDirectSP,false>,
+    &STM8::OP_ADDW_Imm<false>,                 &STM8::OP_SUBW_Imm<false>,                 &STM8::OP_LDW_Ind<Op_ShortDirectSP,false>, &STM8::OP_LDW_Mem<Op_ShortDirectSP,false>,
 
     // 20
     &STM8::OP_JRcc<Cond_T>,   &STM8::OP_JRcc<Cond_F>,   &STM8::OP_JRcc<Cond_UGT>, &STM8::OP_JRcc<Cond_ULE>,
@@ -209,7 +211,7 @@ InstrFunc InstrTable[256] =
     &STM8::OP_IRET,   &STM8::OP_RET,                      &STM8::OP_INT,     &STM8::OP_TRAP,
     &STM8::OP_POP_A,  &STM8::OP_POPW<false>,              &STM8::OP_POP_CC,  &STM8::OP_RETF,
     &STM8::OP_PUSH_A, &STM8::OP_PUSHW<false>,             &STM8::OP_PUSH_CC, &STM8::OP_UNK,
-    &STM8::OP_CCF,    &STM8::OP_CALLF<Op_ExtendedDirect>, &STM8::OP_UNK,     &STM8::OP_UNK,
+    &STM8::OP_CCF,    &STM8::OP_CALLF<Op_ExtendedDirect>, &STM8::OP_HALT,    &STM8::OP_WFI,
 
     // 90
     &STM8::OP_Prefix90, &STM8::OP_Prefix91, &STM8::OP_Prefix92, &STM8::OP_LDW_X_Y,

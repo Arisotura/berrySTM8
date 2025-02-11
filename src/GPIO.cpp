@@ -128,6 +128,7 @@ void STM8GPIO::IOWrite(u32 addr, u8 val)
     {
     case 0x00:
         Output = val;
+        printf("P%c = %02X  %06X\n", Port, val, STM->PC);
         Update();
         return;
     case 0x01:

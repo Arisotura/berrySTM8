@@ -241,7 +241,23 @@ void STM8SPI::SendData(u8 val)
 {
     if (IsMaster())
     {
-        // TODO
+        // TODO make it not instant!
+
+        TXData = val;
+        // TODO send
+        printf("SPI%d SEND %02X\n", Num, val);
+
+        Status |= (1<<1);
+        CheckTXDMA();
+        if (IntCnt & (1<<7))
+            TriggerIRQ();
+
+        RXData = 0; // TODO receive and send shit from devices
+
+        Status |= (1<<0);
+        CheckRXDMA();
+        if (IntCnt & (1<<6))
+            TriggerIRQ();
     }
     else
     {
@@ -264,14 +280,6 @@ void STM8SPI::SendData(u8 val)
 
 u8 STM8SPI::ReceiveData()
 {
-    if (IsMaster())
-    {
-        // TODO
-        return 0;
-    }
-    else
-    {
-        Status &= ~(1<<0);
-        return RXData;
-    }
+    Status &= ~(1<<0);
+    return RXData;
 }

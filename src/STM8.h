@@ -95,6 +95,14 @@ private:
         Cond_ULT        // C=1
     };
 
+    enum
+    {
+        Halt_CPU = (1<<0),          // halt CPU
+        Halt_Peri = (1<<1),         // halt peripherals
+        Halt_WaitIRQ = (1<<2),      // wait for IRQ
+        Halt_WaitEvent = (1<<3),    // wait for external event
+    };
+
     u8 A;
     u16 X, Y;
     u16 SP;
@@ -104,6 +112,7 @@ private:
     u16 _lastop;
 
     s8 NextIRQ;
+    u8 HaltFlags;
 
     void SetNZ(bool n, bool z)
     {
@@ -194,6 +203,11 @@ private:
         CC &= ~(Flag_I0 | Flag_I1);
         if (i0) CC |= Flag_I0;
         if (i1) CC |= Flag_I1;
+    }
+
+    void Halt(u8 flags)
+    {
+        HaltFlags = flags;
     }
 
     enum OperandType

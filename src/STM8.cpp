@@ -320,6 +320,7 @@ void STM8::CPUReset()
     CC = 0x28;
 
     NextIRQ = -1;
+    HaltFlags = 0;
 }
 
 
@@ -333,6 +334,7 @@ void STM8::CPUJumpTo(u32 addr)
     if (addr==0xBC72) printf("I2C READ! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xB074) printf("FIFO WRITE A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xEEC8) printf("UICWAKEUP A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    if (addr==0x9488) printf("REGCLEARBIT A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
 }
 
@@ -483,18 +485,29 @@ int STM8::CPUExecute(int cycles)
     int count = 0;
     while (count < cycles)
     {
-        u8 op = CPUFetch();
-        _lastop = op; // debug
-        int cy = (this->*InstrTable[op])();
+        int cy;
 
-        //printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+        if (HaltFlags & Halt_CPU)
+        {
+            cy = 16; // arbitrary amount
+        }
+        else
+        {
+            u8 op = CPUFetch();
+            _lastop = op; // debug
+            cy = (this->*InstrTable[op])();
 
-        // this will do the job for most cases
-        // instructions are supposed to have decode cycles and execute cycles, but
-        // the documentation isn't complete
+            //printf("PC=%06X A=%02X X=%04X Y=%04X SP=%04X CC=%02X\n", PC, A, X,Y, SP, CC);
+
+            // this will do the job for most cases
+            // instructions are supposed to have decode cycles and execute cycles, but
+            // the documentation isn't complete
+
+        }
         count += cy;//(cy - 1);
 
-        RunDevices(cy);
+        if (!(HaltFlags & Halt_Peri))
+            RunDevices(cy);
 
         if (NextIRQ != -1)
         {
@@ -525,6 +538,9 @@ void STM8::TriggerIRQ(int irq)
 
 void STM8::UpdateIRQ()
 {
+    if (HaltFlags & Halt_WaitEvent) // checkme
+        return;
+
     u8 priolevels[4] = {2, 1, 0, 3};
     u8 curprio = ((CC >> 3) & 0x1) | ((CC >> 4) & 0x2);
     u8 curlev = priolevels[curprio];
@@ -546,6 +562,13 @@ void STM8::UpdateIRQ()
             NextIRQ = i;
             IntMask &= ~(1<<i); // checkme
             //printf("triggering IRQ %d\n", i);
+
+            if (HaltFlags & Halt_WaitIRQ)
+            {
+                printf("wakeup from halt\n");
+                HaltFlags = 0;
+            }
+
             return;
         }
     }

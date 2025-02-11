@@ -37,6 +37,15 @@ int STM8::OP_CCF()
 }
 
 
+int STM8::OP_HALT()
+{
+    SetI(false, true);
+    Halt(Halt_CPU | Halt_Peri | Halt_WaitIRQ);
+    printf("HALT\n");
+    return 10;
+}
+
+
 int STM8::OP_NOP()
 {
     return 1;
@@ -96,6 +105,14 @@ int STM8::OP_TRAP()
 
     CPUJumpTo(0x8004);
     return 9;
+}
+
+
+int STM8::OP_WFI()
+{
+    SetI(false, true);
+    Halt(Halt_CPU | Halt_WaitIRQ);
+    return 10;
 }
 
 
