@@ -35,6 +35,9 @@ STM8SPI::STM8SPI(STM8* stm, u32 iobase, u8 num) : STM8Device(stm, iobase), Num(n
     case 0: IntNum = 26; break;
     case 1: IntNum = 29; break;
     }
+
+    memset(Devices, 0, sizeof(Devices));
+    NumDevices = 0;
 }
 
 STM8SPI::~STM8SPI()
@@ -57,6 +60,21 @@ void STM8SPI::Reset()
     SlaveSel = false;
     CurRXData = 0;
     CurTXData = 0;
+
+    CurDevice = nullptr;
+}
+
+
+void STM8SPI::RegisterDevice(const char* sel, void (*fnselect)(), void (*fnrelease)(), u8 (*fnread)(), void (*fnwrite)(u8))
+{
+    sDevice* dev = &Devices[NumDevices++];
+    dev->SelPort = sel[1] - 'A';
+    dev->SelBit = sel[2] - '0';
+    dev->SelMask = 1 << dev->SelBit;
+    dev->fnSelect = fnselect;
+    dev->fnRelease = fnrelease;
+    dev->fnRead = fnread;
+    dev->fnWrite = fnwrite;
 }
 
 
@@ -97,6 +115,43 @@ void STM8SPI::UpdateMasterMode()
 void STM8SPI::TriggerIRQ()
 {
     STM->TriggerIRQ(IntNum);
+}
+
+
+void STM8SPI::NotifyOutputChange(u8 port, u8 mask, u8 val)
+{
+    if (!IsMaster()) return;
+
+    // check if we have any devices to release
+    if (CurDevice != nullptr)
+    {
+        if ((CurDevice->SelPort == port) &&
+            ((!(mask & CurDevice->SelMask)) || (val & CurDevice->SelMask)))
+        {
+            printf("SPI%d: RELEASING DEVICE P%c%d\n", Num, 'A'+CurDevice->SelPort, CurDevice->SelBit);
+
+            CurDevice->fnRelease();
+            CurDevice = nullptr;
+        }
+    }
+
+    if (CurDevice != nullptr)
+        return;
+
+    for (int i = 0; i < NumDevices; i++)
+    {
+        if ((Devices[i].SelPort == port) &&
+            (mask & Devices[i].SelMask) && (!(val & Devices[i].SelMask)))
+        {
+            CurDevice = &Devices[i];
+
+            // select device
+            printf("SPI%d: SELECTING DEVICE P%c%d\n", Num, 'A'+CurDevice->SelPort, CurDevice->SelBit);
+
+            CurDevice->fnSelect();
+            return;
+        }
+    }
 }
 
 
@@ -189,7 +244,7 @@ u8 STM8SPI::IORead(u32 addr)
 
 void STM8SPI::IOWrite(u32 addr, u8 val)
 {
-    printf("SPI%d: write %06X %02X\n", Num, addr, val);
+    //printf("SPI%d: write %06X %02X\n", Num, addr, val);
     addr -= IOBase;
     switch (addr)
     {
@@ -244,15 +299,18 @@ void STM8SPI::SendData(u8 val)
         // TODO make it not instant!
 
         TXData = val;
-        // TODO send
-        printf("SPI%d SEND %02X\n", Num, val);
+        if (CurDevice)
+            CurDevice->fnWrite(TXData);
+        //printf("SPI%d SEND %02X\n", Num, val);
 
         Status |= (1<<1);
         CheckTXDMA();
         if (IntCnt & (1<<7))
             TriggerIRQ();
 
-        RXData = 0; // TODO receive and send shit from devices
+        RXData = 0;
+        if (CurDevice)
+            RXData = CurDevice->fnRead();
 
         Status |= (1<<0);
         CheckRXDMA();

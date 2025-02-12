@@ -28,10 +28,14 @@ public:
     ~STM8SPI() override;
     void Reset() override;
 
+    void RegisterDevice(const char* sel, void (*fnselect)(), void (*fnrelease)(), u8 (*fnread)(), void (*fnwrite)(u8));
+
     bool IsMaster();
     void UpdateMasterMode();
 
     void TriggerIRQ();
+
+    void NotifyOutputChange(u8 port, u8 mask, u8 val);
 
     void SlaveSelect();
     void SlaveSend(u8 val);
@@ -59,6 +63,20 @@ private:
     bool SlaveSel;
     u8 CurRXData;
     u8 CurTXData;
+
+    struct sDevice
+    {
+        u8 SelPort, SelBit, SelMask;
+        void (*fnSelect)();
+        void (*fnRelease)();
+        u8 (*fnRead)();
+        void (*fnWrite)(u8);
+    };
+
+    static const int kMaxDevices = 16;
+    sDevice Devices[kMaxDevices];
+    int NumDevices;
+    sDevice* CurDevice;
 
     void SetCnt0(u8 val);
     void SetCnt1(u8 val);

@@ -139,7 +139,7 @@ void STM8GPTimer::IOWrite(u32 addr, u8 val)
     {
     case 0x00:
         Cnt[0] = val;
-        printf("%06X TIM%d CNT=%02X\n", STM->GetPC(), Num, val);
+        //printf("%06X TIM%d CNT=%02X\n", STM->GetPC(), Num, val);
         if (val & 0xFE) printf("TIM%d: UNSUPPORTED CNT1 %02X\n", Num, val);
         return;
     case 0x01:

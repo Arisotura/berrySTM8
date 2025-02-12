@@ -78,7 +78,10 @@ u8 STM8GPIO::GetOutput(u8 num)
 
 void STM8GPIO::Update()
 {
-    // TODO do something!
+    u8 mask = Dir; // select outputs
+    u8 val = Output;
+
+    STM->NotifyOutputChange(Num, mask, val);
 
     /*for (int i = 0; i < 8; i++)
     {
@@ -128,7 +131,7 @@ void STM8GPIO::IOWrite(u32 addr, u8 val)
     {
     case 0x00:
         Output = val;
-        printf("P%c = %02X  %06X\n", Port, val, STM->PC);
+        //printf("P%c = %02X  %06X\n", Port, val, STM->PC);
         Update();
         return;
     case 0x01:

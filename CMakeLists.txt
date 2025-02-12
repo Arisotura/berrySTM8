@@ -21,6 +21,10 @@ add_executable(berrySTM8
         src/GPIO.cpp
         src/PMIC.cpp
         src/SPI.cpp
-        src/ADC.cpp)
+        src/ADC.cpp
+        src/TSC.cpp
+        src/Gyro.cpp
+        src/Compass.cpp
+        src/Accel.cpp)
 
 target_link_libraries(berrySTM8 ${SDL2_LIBRARIES})

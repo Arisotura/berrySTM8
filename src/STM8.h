@@ -302,6 +302,8 @@ private:
     friend class STM8DMA;
     friend class STM8SPI;
 
+    void NotifyOutputChange(u8 port, u8 mask, u8 val);
+
     // ---- clock -------------------------------
 
     u8 ClkEnable[3];

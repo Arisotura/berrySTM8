@@ -29,6 +29,10 @@
 #include "ADC.h"
 
 #include "PMIC.h"
+#include "Accel.h"
+#include "Compass.h"
+#include "Gyro.h"
+#include "TSC.h"
 
 
 STM8::STM8()
@@ -73,6 +77,11 @@ STM8::STM8()
     ADC = new STM8ADC(this, 0x5340);
 
     I2C->RegisterDevice(0x48, PMIC::Start, PMIC::Stop, PMIC::Read, PMIC::Write);
+
+    SPI[1]->RegisterDevice("PG4", Accel::Select, Accel::Release, Accel::Read, Accel::Write);
+    SPI[1]->RegisterDevice("PF4", Compass::Select, Compass::Release, Compass::Read, Compass::Write);
+    SPI[1]->RegisterDevice("PF5", Gyro::Select, Gyro::Release, Gyro::Read, Gyro::Write);
+    SPI[1]->RegisterDevice("PF1", TSC::Select, TSC::Release, TSC::Read, TSC::Write);
 }
 
 STM8::~STM8()
@@ -284,6 +293,12 @@ void STM8::NotifyExtIRQ(u8 port, u8 pin, u8 oldval, u8 newval)
     }
 }
 
+void STM8::NotifyOutputChange(u8 port, u8 mask, u8 val)
+{
+    SPI[0]->NotifyOutputChange(port, mask, val);
+    SPI[1]->NotifyOutputChange(port, mask, val);
+}
+
 
 bool STM8::SPISelect(int num)
 {
@@ -341,8 +356,9 @@ void STM8::CPUJumpTo(u32 addr)
     if (addr==0xBC72) printf("I2C READ! A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xB074) printf("FIFO WRITE A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     if (addr==0xEEC8) printf("UICWAKEUP A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
-    if (addr==0x9488) printf("REGCLEARBIT A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    //if (addr==0x9488) printf("REGCLEARBIT A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     //if (addr==0x9321) printf("BRAINROT A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
+    if (addr==0xC3CB) printf("GYRO READ A=%02X X=%04X Y=%04X  @ %06X\n", A, X, Y, PC);
     PC = addr & 0xFFFFFF;
 }
 
@@ -637,9 +653,11 @@ void STM8::MemWrite(u32 addr, u8 val)
     if (addr < RAMSize)
     {
         //printf("STM8: RAM write %04X %02X\n", addr, val);
+        if (addr==2) printf("INPUTSTATE=%02X %06X\n", val, PC);
         if (addr==4) printf("NEXTSTATE=%02X %06X\n", val, PC);
         if (addr==5) printf("UICSTATE=%02X %06X\n", val, PC);
         if (addr==6) printf("ZARP=%02X %06X\n", val, PC);
+        if (addr==0x8B7) printf("8B7=%02X %06X\n", val, PC);
         RAM[addr] = val;
         return;
     }
