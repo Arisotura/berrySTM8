@@ -74,6 +74,11 @@ void Write(u8 val)
     }
 
     //printf("Compass: WRITE %02X %02X\n", RegAddr, val);
+    // C0 = read
+    // 80 = write
+    // registers
+    // 02 = status? when bit0 clear, firmware reads magnet data and sets bit0
+    // 09 = magnet data
 
     switch (RegAddr)
     {

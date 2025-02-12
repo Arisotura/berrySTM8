@@ -76,6 +76,7 @@ int main()
     stm->SetInput("PE5", 1); // sync button
     stm->SetInput("PE7", 1); // power button
     stm->SetInput("PB4", 1); // SPI CS
+    stm->SetInput("PF0", 1); // /PENIRQ
 
     u32 keymask = 0;
     bool touch = false;

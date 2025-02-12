@@ -27,6 +27,8 @@ namespace TSC
 u8 RegAddr;
 bool GotAddr;
 
+u8 ReadVal;
+
 
 bool Init()
 {
@@ -41,6 +43,8 @@ void Reset()
 {
     RegAddr = 0;
     GotAddr = false;
+
+    ReadVal = 0;
 }
 
 
@@ -55,20 +59,12 @@ void Release()
 
 u8 Read()
 {
-    printf("TSC: READ %02X\n", RegAddr);
-
-    u8 ret = 0;
-    switch (RegAddr)
-    {
-    }
-
-    // CHECKME: how many bits does it have?
-    RegAddr++;
-    return ret;
+    return ReadVal;
 }
 
 void Write(u8 val)
 {
+    printf("TSC: WRITE %02X\n", val);
     if (!GotAddr)
     {
         RegAddr = val;
@@ -77,7 +73,12 @@ void Write(u8 val)
         return;
     }
 
-    printf("TSC: WRITE %02X %02X\n", RegAddr, val);
+    // D3   1101 0011  Y+
+    // 93   1001 0011  X+
+    // B3   1011 0011  X+ pressure?
+    //
+
+
 
     switch (RegAddr)
     {
