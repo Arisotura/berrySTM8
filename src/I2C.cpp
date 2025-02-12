@@ -153,11 +153,11 @@ void STM8I2C::Run(int cycles)
         {
             // received data byte
 
-            bool zz = RXEmpty;
             if (RXEmpty)
             {
                 // we have room for the last received byte
                 RXData = CurRXData;
+                printf("RXwasempty: RXData=%02X\n", RXData);
                 RXEmpty = false;
                 Status[0] |= (1<<6); // RX not empty
                 Status[2] &= ~(1<<1);
@@ -167,12 +167,13 @@ void STM8I2C::Run(int cycles)
             else
             {
                 // the previous byte has not been read
+                printf("RXwasnotempty\n");
                 Status[0] |= (1<<2); // BTF
                 Status[2] &= ~(1<<1);
                 if (IntCnt & (1<<1))
                     TriggerIRQ();
             }
-            printf("I2C: received data (%02X), RXEmpty=%d(%d), IntCnt=%02X\n", RXData, RXEmpty, zz, IntCnt);
+            printf("I2C: received data (%02X), RXEmpty=%d, IntCnt=%02X\n", RXData, RXEmpty, IntCnt);
         }
         else if (State == 5)
         {
@@ -307,7 +308,7 @@ void STM8I2C::UpdateState()
 
             // TODO: receive data from device here
             //CurRXData = 0x20;
-            //printf("UpdateState: RECV BYTE\n");
+            printf("UpdateState: RECV BYTE\n");
 
             if (CurDevice)
             {
@@ -407,11 +408,19 @@ void STM8I2C::SendData(u8 val)
 
 u8 STM8I2C::ReceiveData()
 {
-    //printf("I2C: DATA READ\n");
+    printf("I2C: DATA READ: %02X\n", RXData);
 
     Status[0] &= ~(1<<6);
     RXEmpty = true;
     u8 ret = RXData;
+
+    // if there is a pending byte, move it to the RX buffer
+    if (Status[0] & (1<<2))
+    {
+        Status[0] &= ~(1<<2);
+        RXData = CurRXData;
+    }
+
     UpdateState();
     return ret;
 }
